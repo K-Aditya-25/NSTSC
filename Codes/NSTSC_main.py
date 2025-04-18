@@ -15,7 +15,7 @@ def main():
     """
     Dataset_name = "Coffee"
     print('Start Training ---' + str(Dataset_name) + ' ---dataset\n')
-    dataset_path_ = "../UCRArchive_2018/"
+    dataset_path_ = "../UCRArchive_2018"
     normalize_dataset = True
     Max_epoch = 2
     # model training
