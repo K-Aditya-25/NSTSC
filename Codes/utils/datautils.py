@@ -1,13 +1,23 @@
 # -*- coding: utf-8 -*-
+"""
+@file datautils.py
+@brief Data utility functions for NSTSC, including shuffling, loading, feature extraction, and preprocessing.
+"""
+
 import numpy as np
 import pandas as pd
 import random
 from sklearn.preprocessing import StandardScaler
 
 
-
 # Shuffle data
 def Shuffle(X, y):
+    """
+    @brief Shuffle the data and labels in unison.
+    @param X: Input data array.
+    @param y: Labels array.
+    @return Tuple of shuffled (X, y).
+    """
     nums = list(range(len(y)))
     random.shuffle(nums)
     random.shuffle(nums)
@@ -18,7 +28,15 @@ def Shuffle(X, y):
 
 
 # Load Dataset given a dataset's path
-def Readdataset(dataset_path_, Dataset_name, standalize = True, val = False):
+def Readdataset(dataset_path_, Dataset_name, standalize=True, val=False):
+    """
+    @brief Load and preprocess dataset from the given path.
+    @param dataset_path_: Path to the dataset directory.
+    @param Dataset_name: Name of the dataset.
+    @param standalize: Whether to standardize the data.
+    @param val: Whether to split validation from test set.
+    @return Xtrain, ytrain, Xval, yval, Xtest, ytest
+    """
     
     Dataset_folder = dataset_path_ + Dataset_name + '/'
     Xtrain = np.load(Dataset_folder + Dataset_name + '_Xtrain.npy')
@@ -64,6 +82,11 @@ def Readdataset(dataset_path_, Dataset_name, standalize = True, val = False):
 
 # Dimension of data
 def calculate_dataset_metrics(Xtrain):
+    """
+    @brief Calculate the number of samples and time steps in the training data.
+    @param Xtrain: Training data array.
+    @return Tuple (N, T) where N is the number of samples and T is the number of time steps.
+    """
     
     N, T = Xtrain.shape[0], int(Xtrain.shape[1]/3)
     
@@ -72,6 +95,11 @@ def calculate_dataset_metrics(Xtrain):
 
 # Compute interval length
 def Get_intinfo(T):
+    """
+    @brief Compute the interval length and number of intervals for a given time series length.
+    @param T: Number of time steps.
+    @return Tuple (intvlen, nintv) where intvlen is interval length and nintv is number of intervals.
+    """
     
     if T > 40:
         nintv = 20
@@ -85,6 +113,12 @@ def Get_intinfo(T):
 
 # Multi-view representation
 def Splitview(X, T):
+    """
+    @brief Split the input data into original, FFT, and special feature views.
+    @param X: Input data array.
+    @param T: Number of time steps per view.
+    @return Tuple (Xori, Xfft, Xspe) of split data views.
+    """
     
     Xori = X[:,:T]
     Xfft = X[:,T:2*T]
@@ -94,9 +128,26 @@ def Splitview(X, T):
 
 
 # Interval feature extraction
-def Extract_intfea(Xtrain_raw, Xtrain_fft, Xtrain_derv, Xval_raw, \
-                   Xval_fft, Xval_derv, Xtest_raw, Xtest_fft, Xtest_derv,\
-                   nintv, intvlen):
+def Extract_intfea(
+    Xtrain_raw, Xtrain_fft, Xtrain_derv,
+    Xval_raw, Xval_fft, Xval_derv,
+    Xtest_raw, Xtest_fft, Xtest_derv,
+    nintv, intvlen):
+    """
+    @brief Extract interval features for all data splits and views.
+    @param Xtrain_raw: Raw training data.
+    @param Xtrain_fft: FFT features for training data.
+    @param Xtrain_derv: Derivative features for training data.
+    @param Xval_raw: Raw validation data.
+    @param Xval_fft: FFT features for validation data.
+    @param Xval_derv: Derivative features for validation data.
+    @param Xtest_raw: Raw test data.
+    @param Xtest_fft: FFT features for test data.
+    @param Xtest_derv: Derivative features for test data.
+    @param nintv: Number of intervals.
+    @param intvlen: Length of each interval.
+    @return Tuple of all processed data splits and views with interval features.
+    """
     
     Xtrain_raw = Addstatfea(Xtrain_raw, nintv, intvlen)
     Xtrain_fft = Addstatfea(Xtrain_fft, nintv, intvlen)
@@ -114,6 +165,13 @@ def Extract_intfea(Xtrain_raw, Xtrain_fft, Xtrain_derv, Xval_raw, \
 
 # Add statistical features from interval data
 def Addstatfea(X, n, t):
+    """
+    @brief Add statistical features (mean, std, min, max, median, IQR, slope) from interval data.
+    @param X: Input data array.
+    @param n: Number of intervals.
+    @param t: Length of each interval.
+    @return Array with additional statistical features.
+    """
     X = Addmean(X, n, t)
     X = Addstd(X, n, t)
     X = Addmin(X, n, t)
@@ -126,6 +184,13 @@ def Addstatfea(X, n, t):
 
 # Mean feature
 def Addmean(X, n, t):
+    """
+    @brief Add mean feature for each interval.
+    @param X: Input data array.
+    @param n: Number of intervals.
+    @param t: Length of each interval.
+    @return Array with mean features appended.
+    """
     T = X.shape[1]
     Xmean = np.zeros((X.shape[0],n))
     for i in range(n):
@@ -139,6 +204,13 @@ def Addmean(X, n, t):
 
 # Std feature
 def Addstd(X, n, t):
+    """
+    @brief Add standard deviation feature for each interval.
+    @param X: Input data array.
+    @param n: Number of intervals.
+    @param t: Length of each interval.
+    @return Array with std features appended.
+    """
     T = X.shape[1]
     Xstd = np.zeros((X.shape[0],n))
     for i in range(n):
@@ -152,6 +224,13 @@ def Addstd(X, n, t):
 
 # Min feature
 def Addmin(X, n, t):
+    """
+    @brief Add minimum value feature for each interval.
+    @param X: Input data array.
+    @param n: Number of intervals.
+    @param t: Length of each interval.
+    @return Array with min features appended.
+    """
     T = X.shape[1]
     Xmin = np.zeros((X.shape[0],n))
     for i in range(n):
@@ -165,6 +244,13 @@ def Addmin(X, n, t):
 
 # Max feature
 def Addmax(X, n, t):
+    """
+    @brief Add maximum value feature for each interval.
+    @param X: Input data array.
+    @param n: Number of intervals.
+    @param t: Length of each interval.
+    @return Array with max features appended.
+    """
     T = X.shape[1]
     Xmax = np.zeros((X.shape[0],n))
     for i in range(n):
@@ -178,6 +264,13 @@ def Addmax(X, n, t):
 
 # Median feature
 def Addmedian(X, n, t):
+    """
+    @brief Add median value feature for each interval.
+    @param X: Input data array.
+    @param n: Number of intervals.
+    @param t: Length of each interval.
+    @return Array with median features appended.
+    """
     T = X.shape[1]
     Xmedian = np.zeros((X.shape[0],n))
     for i in range(n):
@@ -191,6 +284,13 @@ def Addmedian(X, n, t):
 
 # IQR feature
 def AddIQR(X, n, t):
+    """
+    @brief Add interquartile range (IQR) feature for each interval.
+    @param X: Input data array.
+    @param n: Number of intervals.
+    @param t: Length of each interval.
+    @return Array with IQR features appended.
+    """
     T = X.shape[1]
     XIQR = np.zeros((X.shape[0],n))
     for i in range(n):
@@ -206,6 +306,13 @@ def AddIQR(X, n, t):
 
 # Slope feature
 def Addslope(X, n, t):
+    """
+    @brief Add slope (trend) feature for each interval.
+    @param X: Input data array.
+    @param n: Number of intervals.
+    @param t: Length of each interval.
+    @return Array with slope features appended.
+    """
     T = X.shape[1]
     Xslope = np.zeros((X.shape[0],n))
     for i in range(n):
@@ -228,7 +335,15 @@ def Addslope(X, n, t):
 
 
 # Standardize data
-def Stand_data(Xtrain, Xval, Xtest, val = False):
+def Stand_data(Xtrain, Xval, Xtest, val=False):
+    """
+    @brief Standardize training, validation, and test datasets.
+    @param Xtrain: Training data array.
+    @param Xval: Validation data array.
+    @param Xtest: Test data array.
+    @param val: Whether to treat Xval as a separate validation set.
+    @return Tuple of standardized (Xtrain, Xval, Xtest).
+    """
     if val:
         Ntrain = Xtrain.shape[0]
         Nval = Xval.shape[0]
@@ -253,6 +368,13 @@ def Stand_data(Xtrain, Xval, Xtest, val = False):
 
 # Extract features from multi views
 def Multi_view(Xtrain_raw, Xval_raw, Xtest_raw):
+    """
+    @brief Extract features from multiple views of the input data.
+    @param Xtrain_raw: Raw training data.
+    @param Xval_raw: Raw validation data.
+    @param Xtest_raw: Raw test data.
+    @return Tuple of processed (Xtrain, Xval, Xtest).
+    """
     N, T = calculate_dataset_metrics(Xtrain_raw)
     intvlen, nintv = Get_intinfo(T)
     

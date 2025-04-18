@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-Created on Tue Oct 11 10:30:37 2022
+@file train_utils.py
+@brief Utility functions and classes for training the NSTSC model.
 
+Created on Tue Oct 11 10:30:37 2022
 @author: yanru
 """
 
@@ -10,40 +12,81 @@ import torch
 from torch.autograd import Variable
 from sklearn.metrics import accuracy_score
 from Models_node import *
+
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-# Define Node class
-class Node():
+class Node:
+    """
+    @class Node
+    @brief Represents a node in the NSTSC tree.
+    """
     def __init__(self, nodei):
-       self.idx = nodei
+        """
+        @brief Initialize a Node with an index.
+        @param nodei Index of the node.
+        """
+        self.idx = nodei
 
 
 # Assign training data to a node
 def Givetraintonode(Nodes, pronodenum, datanums):
+    """
+    @brief Assigns training data indices to a node.
+    @param Nodes Dictionary of nodes.
+    @param pronodenum Node index to assign data to.
+    @param datanums List of data indices.
+    @return Updated Nodes dictionary.
+    """
     Nodes[pronodenum].trainidx = datanums
     return Nodes
 
 
 # Assign validation data to a node
 def Givevaltonode(Nodes, pronodenum, datanums):
+    """
+    @brief Assigns validation data indices to a node.
+    @param Nodes Dictionary of nodes.
+    @param pronodenum Node index to assign data to.
+    @param datanums List of data indices.
+    @return Updated Nodes dictionary.
+    """
     Nodes[pronodenum].testidx = datanums
     return Nodes
 
 
 # Train a NSTSC model given training data
-def Train_model(Xtrain_raw, Xval_raw, ytrain_raw, yval_raw, \
-                epochs = 100, normalize_timeseries = True, lr = 0.1):
+def Train_model(Xtrain_raw, Xval_raw, ytrain_raw, yval_raw, epochs=100, normalize_timeseries=True, lr=0.1):
+    """
+    @brief Train a NSTSC model given training and validation data.
+    @param Xtrain_raw Training data features.
+    @param Xval_raw Validation data features.
+    @param ytrain_raw Training data labels.
+    @param yval_raw Validation data labels.
+    @param epochs Number of training epochs.
+    @param normalize_timeseries Whether to normalize the time series.
+    @param lr Learning rate.
+    @return Trained tree model.
+    """
     classnum = int(np.max(ytrain_raw) + 1)
-    Tree = Build_tree(Xtrain_raw, Xval_raw, ytrain_raw, yval_raw, epochs, classnum, \
-                   learnrate = lr, savepath = './utils/')
+    Tree = Build_tree(Xtrain_raw, Xval_raw, ytrain_raw, yval_raw, epochs, classnum, learnrate=lr, savepath='./utils/')
     Tree = Prune_tree(Tree, Xval_raw, yval_raw)
-    
     return Tree
 
 
 # Construct a tree from node phase classifiers
-def Build_tree(Xtrain, Xval, ytrain_raw, yval_raw, Epoch, classnum, \
-               learnrate, savepath = "./utils/"):
+def Build_tree(Xtrain, Xval, ytrain_raw, yval_raw, Epoch, classnum, learnrate, savepath="./utils/"):
+    """
+    @brief Construct a tree from node phase classifiers.
+    @param Xtrain: Training data features.
+    @param Xval: Validation data features.
+    @param ytrain_raw: Training data labels.
+    @param yval_raw: Validation data labels.
+    @param Epoch: Number of training epochs.
+    @param classnum: Number of classes.
+    @param learnrate: Learning rate for training.
+    @param savepath: Path to save models.
+    @return Tree dictionary.
+    """
     Tree = {}
     pronodenum = 0
     maxnodenum = 0
@@ -78,6 +121,21 @@ def Build_tree(Xtrain, Xval, ytrain_raw, yval_raw, Epoch, classnum, \
 
 # Train a node phase classifier
 def Trainnode(Nodes, pronum, Epoch, lrt, X, y, Mdlnum, mdlpath, clsnum, Xt, yt):
+    """
+    @brief Train a node phase classifier.
+    @param Nodes: Dictionary of nodes.
+    @param pronum: Current node index.
+    @param Epoch: Number of epochs.
+    @param lrt: Learning rate.
+    @param X: Training features.
+    @param y: Training labels.
+    @param Mdlnum: Model number.
+    @param mdlpath: Path to save model.
+    @param clsnum: Number of classes.
+    @param Xt: Validation features.
+    @param yt: Validation labels.
+    @return Updated Nodes and split indices.
+    """
     trainidx = Nodes[pronum].trainidx    
     Xori = X[trainidx,:]
     yori = y[trainidx]
@@ -167,6 +225,18 @@ def Trainnode(Nodes, pronum, Epoch, lrt, X, y, Mdlnum, mdlpath, clsnum, Xt, yt):
 
 # Expand left child node
 def Updateleftchd(Nodes, pronum, maxnum, Xori, yori, clsnum, Xorit, yorit):
+    """
+    @brief Expand left child node.
+    @param Nodes: Dictionary of nodes.
+    @param pronum: Parent node index.
+    @param maxnum: Maximum node index.
+    @param Xori: Training features.
+    @param yori: Training labels.
+    @param clsnum: Number of classes.
+    @param Xorit: Validation features.
+    @param yorit: Validation labels.
+    @return Updated Nodes and maxnum.
+    """
     Leftidx = Nodes[pronum].trueidx
     Leftidxt = Nodes[pronum].trueidxt
     yleft = yori[Leftidx]
@@ -198,6 +268,18 @@ def Updateleftchd(Nodes, pronum, maxnum, Xori, yori, clsnum, Xorit, yorit):
 
 # Expand right child node
 def Updaterigtchd(Nodes, pronum, maxnum, Xori, yori, clsnum, Xorit, yorit):
+    """
+    @brief Expand right child node.
+    @param Nodes: Dictionary of nodes.
+    @param pronum: Parent node index.
+    @param maxnum: Maximum node index.
+    @param Xori: Training features.
+    @param yori: Training labels.
+    @param clsnum: Number of classes.
+    @param Xorit: Validation features.
+    @param yorit: Validation labels.
+    @return Updated Nodes and maxnum.
+    """
     Rightidx = Nodes[pronum].falseidx
     Rightidxt = Nodes[pronum].falseidxt
     yright = yori[Rightidx]
@@ -228,6 +310,12 @@ def Updaterigtchd(Nodes, pronum, maxnum, Xori, yori, clsnum, Xorit, yorit):
 
 # Binary encoding of multi-class label
 def Ecdlabel(yori, cnum):
+    """
+    @brief Binary encoding of multi-class label.
+    @param yori: Labels to encode.
+    @param cnum: Classes present.
+    @return Encoded labels.
+    """
     ynew = {}
     for c in cnum:
         yc = np.zeros(yori.shape)
@@ -238,6 +326,15 @@ def Ecdlabel(yori, cnum):
 
 # Gini index for classification at a node
 def Cptginisplit(mds, X, y, T, clsnum):
+    """
+    @brief Compute Gini index for classification at a node.
+    @param mds: Model predictions.
+    @param X: Data features.
+    @param y: Labels.
+    @param T: Number of time steps.
+    @param clsnum: Number of classes.
+    @return Gini index and split indices.
+    """
     ginis = []
     for md in mds.values():
         Xmd_preds = md(X[:,:T], X[:,T:2*T], X[:,2*T:])
@@ -253,6 +350,15 @@ def Cptginisplit(mds, X, y, T, clsnum):
 
 # Gini index computation for each classifier
 def Cpt_ginigroup(num1, y1, num0, y0, clsnum):
+    """
+    @brief Compute Gini index for each classifier group.
+    @param num1: Number of samples in group 1.
+    @param y1: Labels in group 1.
+    @param num0: Number of samples in group 0.
+    @param y0: Labels in group 0.
+    @param clsnum: Number of classes.
+    @return Gini index.
+    """
     y1prob = torch.zeros(clsnum)
     y0prob = torch.zeros(clsnum)
     y1N = len(y1)
@@ -272,6 +378,12 @@ def Cpt_ginigroup(num1, y1, num0, y0, clsnum):
 
 # Gini index for a node
 def Cptgininode(yori, clsn):
+    """
+    @brief Compute Gini index for a node.
+    @param yori: Labels at node.
+    @param clsn: Number of classes.
+    @return Gini index.
+    """
     yfrac = np.zeros(clsn)
     for i in range(clsn):
         try:
@@ -284,6 +396,14 @@ def Cptgininode(yori, clsn):
 
 # Accuracy for a node phase classifier
 def Cpt_Accuracy(mdl, X, y, T):
+    """
+    @brief Compute accuracy for a node phase classifier.
+    @param mdl: Model.
+    @param X: Data features.
+    @param y: Labels.
+    @param T: Number of time steps.
+    @return Accuracy score.
+    """
     Xpreds = mdl(X[:,:T], X[:,T:2*T], X[:,2*T:])
     Xpredsnp = Xpreds.detach().numpy()
     Xpnprd = np.round(Xpredsnp)
@@ -296,6 +416,12 @@ def Cpt_Accuracy(mdl, X, y, T):
 
 # Count the number of data in each class
 def County(yori, clsnum):
+    """
+    @brief Count the number of data in each class.
+    @param yori: Labels.
+    @param clsnum: Number of classes.
+    @return Array of counts per class.
+    """
     ycount = np.zeros((clsnum))
     for i in range(clsnum):
         ycount[i] = sum(yori == i)
@@ -304,6 +430,13 @@ def County(yori, clsnum):
 
 # Prune a tree using validation data
 def Prune_tree(Tree, Xval, yval):
+    """
+    @brief Prune a tree using validation data.
+    @param Tree: Tree dictionary.
+    @param Xval: Validation features.
+    @param yval: Validation labels.
+    @return Pruned tree.
+    """
     Xpredclass, tstaccu, accuuptobst, keep_list = Postprune(Tree, Xval, yval)
     Tree_pruned = {}
     
@@ -323,6 +456,13 @@ def Prune_tree(Tree, Xval, yval):
 
 # Postprune nodes of a tree classifier
 def Postprune(Nodes, Xtestori, ytestori):
+    """
+    @brief Postprune nodes of a tree classifier.
+    @param Nodes: Tree dictionary.
+    @param Xtestori: Test features.
+    @param ytestori: Test labels.
+    @return Pruned tree.
+    """
     Xtestori = torch.Tensor(Xtestori)
     T = int(Xtestori.shape[1]/3)
     Nodes[0].Testidx = list(range(len(ytestori))) 
@@ -378,6 +518,13 @@ def Postprune(Nodes, Xtestori, ytestori):
 
 # Evaluate model's performance using test data
 def Evaluate_model(Nodes, Xtestori, ytestori):
+    """
+    @brief Evaluate model's performance using test data.
+    @param Nodes: Tree dictionary.
+    @param Xtestori: Test features.
+    @param ytestori: Test labels.
+    @return Accuracy score.
+    """
     Xtestori = torch.Tensor(Xtestori)
     clsnum = max(ytestori) + 1
     T = int(Xtestori.shape[1]/3)
