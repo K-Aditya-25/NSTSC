@@ -39,10 +39,12 @@ def Readdataset(dataset_path_, Dataset_name, standalize=True, val=False):
     """
     
     Dataset_folder = dataset_path_ + Dataset_name + '/'
-    Xtrain = np.load(Dataset_folder + Dataset_name + '_Xtrain.npy')
-    Xtest = np.load(Dataset_folder + Dataset_name + '_Xtest.npy')
-    ytrain = np.load(Dataset_folder + Dataset_name + '_ytrain.npy')
-    ytest = np.load(Dataset_folder + Dataset_name + '_ytest.npy')
+    Xtrain = pd.read_csv(Dataset_folder + Dataset_name + '_TRAIN.tsv', header=None).values
+    Xtest = pd.read_csv(Dataset_folder + Dataset_name + '_TEST.tsv', header=None).values
+    ytrain = Xtrain[:,0]
+    ytest = Xtest[:,0]
+    Xtrain = Xtrain[:,1:]
+    Xtest = Xtest[:,1:]
     Xtrain, ytrain = Shuffle(Xtrain, ytrain)
     Xtest, ytest = Shuffle(Xtest, ytest)
     
