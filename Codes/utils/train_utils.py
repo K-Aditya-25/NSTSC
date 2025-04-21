@@ -30,6 +30,7 @@ class Node:
         @brief Initialize a Node with an index.
         @param nodei Index of the node.
         """
+        print("Created Node")
         self.idx = nodei
 
 
@@ -42,6 +43,7 @@ def Givetraintonode(Nodes, pronodenum, datanums):
     @param datanums List of data indices.
     @return Updated Nodes dictionary.
     """
+    print("Running Givetraintonode .")
     Nodes[pronodenum].trainidx = datanums
     return Nodes
 
@@ -55,6 +57,7 @@ def Givevaltonode(Nodes, pronodenum, datanums):
     @param datanums List of data indices.
     @return Updated Nodes dictionary.
     """
+    print("Running Givevaltonode .")
     Nodes[pronodenum].testidx = datanums
     return Nodes
 
@@ -72,6 +75,7 @@ def Train_model(Xtrain_raw, Xval_raw, ytrain_raw, yval_raw, epochs=100, normaliz
     @param lr Learning rate.
     @return Trained tree model.
     """
+    print("Running Train_model .")
     classnum = int(np.max(ytrain_raw) + 1)
     Tree = Build_tree(Xtrain_raw, Xval_raw, ytrain_raw, yval_raw, epochs, classnum, learnrate=lr, savepath='./utils/')
     Tree = Prune_tree(Tree, Xval_raw, yval_raw)
@@ -92,6 +96,7 @@ def Build_tree(Xtrain, Xval, ytrain_raw, yval_raw, Epoch, classnum, learnrate, s
     @param savepath: Path to save models.
     @return Tree dictionary.
     """
+    print("Running Build_tree .")
     Tree = {}
     pronodenum = 0
     maxnodenum = 0
@@ -141,6 +146,7 @@ def Trainnode(Nodes, pronum, Epoch, lrt, X, y, Mdlnum, mdlpath, clsnum, Xt, yt):
     @param yt: Validation labels.
     @return Updated Nodes and split indices.
     """
+    print("Running Trainnode .")
     trainidx = Nodes[pronum].trainidx    
     Xori = X[trainidx,:]
     yori = y[trainidx]
@@ -159,13 +165,18 @@ def Trainnode(Nodes, pronum, Epoch, lrt, X, y, Mdlnum, mdlpath, clsnum, Xt, yt):
     yorit = torch.tensor(yorit, dtype=torch.long, device=device)
     N, T = len(yori), int(Xori.shape[1]/3)
     ginibest = 10
+    #debugging statement
+    print(f"Number of training samples: {N}")
     Xori = torch.tensor(Xori, dtype=torch.float32, device=device)
     Xorit = torch.tensor(Xorit, dtype=torch.float32, device=device)
     batch_size = N // 20
     if batch_size <= 1:
         batch_size = N
-        
+    #debugging statement
+    print(f"Batch size: {batch_size}")
     for mdlnum in range(1, Mdlnum):
+        #debugging statement
+        print(f"Model number: {mdlnum}")
         tlnns = {}
         optimizers = {}
         X_rns = {}
@@ -175,7 +186,9 @@ def Trainnode(Nodes, pronum, Epoch, lrt, X, y, Mdlnum, mdlpath, clsnum, Xt, yt):
             optimizers[i] = torch.optim.AdamW(tlnns[i].parameters(), lr = lrt)
         
         ginisall = []
-        for epoch in range(Epoch):        
+        for epoch in range(Epoch): 
+            #debugging statement
+            print(f"Epoch: {epoch}")       
             for d_i in range(N//batch_size + 1):
                 rand_idx = np.array(range(d_i*batch_size, min((d_i+1)*batch_size,\
                                 N)))           
@@ -205,6 +218,8 @@ def Trainnode(Nodes, pronum, Epoch, lrt, X, y, Mdlnum, mdlpath, clsnum, Xt, yt):
                     ginisminnum = int(giniscores.argmin().numpy())
                     ginismin = giniscores.min()
                     ginisall.append(ginismin)
+                    #debugging statement
+                    print(f"Current ginis: {ginismin}")
                     if ginismin < ginibest:
                         torch.save(tlnns[curclasses[ginisminnum]], mdlpath + 'bestmodel.pkl')
                         # Nodes[pronum].predcls = ginisminnum
@@ -242,6 +257,7 @@ def Updateleftchd(Nodes, pronum, maxnum, Xori, yori, clsnum, Xorit, yorit):
     @param yorit: Validation labels.
     @return Updated Nodes and maxnum.
     """
+    print("Running Updateleftchd .")
     Leftidx = Nodes[pronum].trueidx
     Leftidxt = Nodes[pronum].trueidxt
     yleft = yori[Leftidx]
@@ -285,6 +301,7 @@ def Updaterigtchd(Nodes, pronum, maxnum, Xori, yori, clsnum, Xorit, yorit):
     @param yorit: Validation labels.
     @return Updated Nodes and maxnum.
     """
+    print("Running Updaterigtchd .")
     Rightidx = Nodes[pronum].falseidx
     Rightidxt = Nodes[pronum].falseidxt
     yright = yori[Rightidx]
@@ -321,6 +338,7 @@ def Ecdlabel(yori, cnum):
     @param cnum: Classes present.
     @return Encoded labels.
     """
+    print("Running Ecdlabel .")
     ynew = {}
     for c in cnum:
         yc = np.zeros(yori.shape)
@@ -340,6 +358,7 @@ def Cptginisplit(mds, X, y, T, clsnum):
     @param clsnum: Number of classes.
     @return Gini index and split indices.
     """
+    print("Running Cptginisplit .")
     ginis = []
     for md in mds.values():
         Xmd_preds = md(X[:,:T], X[:,T:2*T], X[:,2*T:])
@@ -364,6 +383,7 @@ def Cpt_ginigroup(num1, y1, num0, y0, clsnum):
     @param clsnum: Number of classes.
     @return Gini index.
     """
+    print("Running Cpt_ginigroup .")
     y1prob = torch.zeros(clsnum)
     y0prob = torch.zeros(clsnum)
     y1N = len(y1)
@@ -389,6 +409,7 @@ def Cptgininode(yori, clsn):
     @param clsn: Number of classes.
     @return Gini index.
     """
+    print("Running Cptgininode .")
     yfrac = np.zeros(clsn)
     for i in range(clsn):
         try:
@@ -409,6 +430,7 @@ def Cpt_Accuracy(mdl, X, y, T):
     @param T: Number of time steps.
     @return Accuracy score.
     """
+    print("Running Cpt_Accuracy .")
     Xpreds = mdl(X[:,:T], X[:,T:2*T], X[:,2*T:])
     Xpreds = Xpreds.cpu()
     Xpredsnp = Xpreds.detach().numpy()
@@ -428,6 +450,7 @@ def County(yori, clsnum):
     @param clsnum: Number of classes.
     @return Array of counts per class.
     """
+    print("Running County .")
     ycount = np.zeros((clsnum))
     for i in range(clsnum):
         ycount[i] = sum(yori == i)
@@ -443,6 +466,7 @@ def Prune_tree(Tree, Xval, yval):
     @param yval: Validation labels.
     @return Pruned tree.
     """
+    print("Running Prune_tree .")
     Xpredclass, tstaccu, accuuptobst, keep_list = Postprune(Tree, Xval, yval)
     Tree_pruned = {}
     
@@ -469,6 +493,7 @@ def Postprune(Nodes, Xtestori, ytestori):
     @param ytestori: Test labels.
     @return Pruned tree.
     """
+    print("Running Postprune .")
     Xtestori = torch.tensor(Xtestori, dtype=torch.float32, device=device)
     clsnum = max(ytestori) + 1
     T = int(Xtestori.shape[1]/3)
@@ -532,6 +557,7 @@ def Evaluate_model(Nodes, Xtestori, ytestori):
     @param ytestori: Test labels.
     @return Accuracy score.
     """
+    print("Running Evaluate_model .")
     Xtestori = torch.tensor(Xtestori, dtype=torch.float32, device=device)
     clsnum = max(ytestori) + 1
     T = int(Xtestori.shape[1]/3)

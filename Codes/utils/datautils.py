@@ -18,6 +18,7 @@ def Shuffle(X, y):
     @param y: Labels array.
     @return Tuple of shuffled (X, y).
     """
+    print("Running Shuffle .")
     nums = list(range(len(y)))
     random.shuffle(nums)
     random.shuffle(nums)
@@ -37,7 +38,7 @@ def Readdataset(dataset_path_, Dataset_name, standalize=True, val=False):
     @param val: Whether to split validation from test set.
     @return Xtrain, ytrain, Xval, yval, Xtest, ytest
     """
-    
+    print("Running Readdataset .")
     Dataset_folder = dataset_path_ + Dataset_name + '/'
     Xtrain = pd.read_csv(Dataset_folder + Dataset_name + '_TRAIN.tsv', header=None, sep='\t').values
     Xtest = pd.read_csv(Dataset_folder + Dataset_name + '_TEST.tsv', header=None, sep='\t').values
@@ -89,7 +90,7 @@ def calculate_dataset_metrics(Xtrain):
     @param Xtrain: Training data array.
     @return Tuple (N, T) where N is the number of samples and T is the number of time steps.
     """
-    
+    print("Running calculate_dataset_metrics .")
     N, T = Xtrain.shape[0], int(Xtrain.shape[1]/3)
     
     return N, T
@@ -102,7 +103,7 @@ def Get_intinfo(T):
     @param T: Number of time steps.
     @return Tuple (intvlen, nintv) where intvlen is interval length and nintv is number of intervals.
     """
-    
+    print("Running Get_intinfo .")
     if T > 40:
         nintv = 20
         intvlen = int(T//nintv)
@@ -121,7 +122,7 @@ def Splitview(X, T):
     @param T: Number of time steps per view.
     @return Tuple (Xori, Xfft, Xspe) of split data views.
     """
-    
+    print("Running Splitview .")
     Xori = X[:,:T]
     Xfft = X[:,T:2*T]
     Xspe = X[:,2*T:]
@@ -150,7 +151,7 @@ def Extract_intfea(
     @param intvlen: Length of each interval.
     @return Tuple of all processed data splits and views with interval features.
     """
-    
+    print("Running Extract_intfea .")
     Xtrain_raw = Addstatfea(Xtrain_raw, nintv, intvlen)
     Xtrain_fft = Addstatfea(Xtrain_fft, nintv, intvlen)
     Xtrain_derv = Addstatfea(Xtrain_derv, nintv, intvlen)
@@ -174,6 +175,7 @@ def Addstatfea(X, n, t):
     @param t: Length of each interval.
     @return Array with additional statistical features.
     """
+    print("Running Addstatfea .")
     X = Addmean(X, n, t)
     X = Addstd(X, n, t)
     X = Addmin(X, n, t)
@@ -193,6 +195,7 @@ def Addmean(X, n, t):
     @param t: Length of each interval.
     @return Array with mean features appended.
     """
+    print("Running Addmean .")
     T = X.shape[1]
     Xmean = np.zeros((X.shape[0],n))
     for i in range(n):
@@ -213,6 +216,7 @@ def Addstd(X, n, t):
     @param t: Length of each interval.
     @return Array with std features appended.
     """
+    print("Running Addstd .")
     T = X.shape[1]
     Xstd = np.zeros((X.shape[0],n))
     for i in range(n):
@@ -233,6 +237,7 @@ def Addmin(X, n, t):
     @param t: Length of each interval.
     @return Array with min features appended.
     """
+    print("Running Addmin .")
     T = X.shape[1]
     Xmin = np.zeros((X.shape[0],n))
     for i in range(n):
@@ -253,6 +258,7 @@ def Addmax(X, n, t):
     @param t: Length of each interval.
     @return Array with max features appended.
     """
+    print("Running Addmax .")
     T = X.shape[1]
     Xmax = np.zeros((X.shape[0],n))
     for i in range(n):
@@ -273,6 +279,7 @@ def Addmedian(X, n, t):
     @param t: Length of each interval.
     @return Array with median features appended.
     """
+    print("Running Addmedian .")
     T = X.shape[1]
     Xmedian = np.zeros((X.shape[0],n))
     for i in range(n):
@@ -293,6 +300,7 @@ def AddIQR(X, n, t):
     @param t: Length of each interval.
     @return Array with IQR features appended.
     """
+    print("Running AddIQR .")
     T = X.shape[1]
     XIQR = np.zeros((X.shape[0],n))
     for i in range(n):
@@ -315,6 +323,7 @@ def Addslope(X, n, t):
     @param t: Length of each interval.
     @return Array with slope features appended.
     """
+    print("Running Addslope .")
     T = X.shape[1]
     Xslope = np.zeros((X.shape[0],n))
     for i in range(n):
@@ -346,6 +355,7 @@ def Stand_data(Xtrain, Xval, Xtest, val=False):
     @param val: Whether to treat Xval as a separate validation set.
     @return Tuple of standardized (Xtrain, Xval, Xtest).
     """
+    print("Running Stand_data .")
     if val:
         Ntrain = Xtrain.shape[0]
         Nval = Xval.shape[0]
@@ -396,10 +406,3 @@ def Multi_view(Xtrain_raw, Xval_raw, Xtest_raw):
     Xtrain, Xval, Xtest = Stand_data(Xtrain, Xval, Xtest)
 
     return Xtrain, Xval, Xtest
-
-
-
-
-
-
-
