@@ -30,6 +30,7 @@ class Node:
 
 # Assign training data to a node
 def Givetraintonode(Nodes, pronodenum, datanums):
+    print("Running Givetraintonode")
     """
     @brief Assigns training data indices to a node.
     @param Nodes Dictionary of nodes.
@@ -43,6 +44,7 @@ def Givetraintonode(Nodes, pronodenum, datanums):
 
 # Assign validation data to a node
 def Givevaltonode(Nodes, pronodenum, datanums):
+    print("Running Givevaltonode")
     """
     @brief Assigns validation data indices to a node.
     @param Nodes Dictionary of nodes.
@@ -56,6 +58,7 @@ def Givevaltonode(Nodes, pronodenum, datanums):
 
 # Train a NSTSC model given training data
 def Train_model(Xtrain_raw, Xval_raw, ytrain_raw, yval_raw, epochs=100, normalize_timeseries=True, lr=0.1):
+    print("Running Train_model")
     """
     @brief Train a NSTSC model given training and validation data.
     @param Xtrain_raw Training data features.
@@ -75,6 +78,7 @@ def Train_model(Xtrain_raw, Xval_raw, ytrain_raw, yval_raw, epochs=100, normaliz
 
 # Construct a tree from node phase classifiers
 def Build_tree(Xtrain, Xval, ytrain_raw, yval_raw, Epoch, classnum, learnrate, savepath="./utils/"):
+    print("Running Build_tree")
     """
     @brief Construct a tree from node phase classifiers.
     @param Xtrain: Training data features.
@@ -121,6 +125,7 @@ def Build_tree(Xtrain, Xval, ytrain_raw, yval_raw, Epoch, classnum, learnrate, s
 
 # Train a node phase classifier
 def Trainnode(Nodes, pronum, Epoch, lrt, X, y, Mdlnum, mdlpath, clsnum, Xt, yt):
+    print("Running Trainnode")
     """
     @brief Train a node phase classifier.
     @param Nodes: Dictionary of nodes.
@@ -225,6 +230,7 @@ def Trainnode(Nodes, pronum, Epoch, lrt, X, y, Mdlnum, mdlpath, clsnum, Xt, yt):
 
 # Expand left child node
 def Updateleftchd(Nodes, pronum, maxnum, Xori, yori, clsnum, Xorit, yorit):
+    print("Running Updateleftchd")
     """
     @brief Expand left child node.
     @param Nodes: Dictionary of nodes.
@@ -268,6 +274,7 @@ def Updateleftchd(Nodes, pronum, maxnum, Xori, yori, clsnum, Xorit, yorit):
 
 # Expand right child node
 def Updaterigtchd(Nodes, pronum, maxnum, Xori, yori, clsnum, Xorit, yorit):
+    print("Running Updaterigtchd")
     """
     @brief Expand right child node.
     @param Nodes: Dictionary of nodes.
@@ -310,6 +317,7 @@ def Updaterigtchd(Nodes, pronum, maxnum, Xori, yori, clsnum, Xorit, yorit):
 
 # Binary encoding of multi-class label
 def Ecdlabel(yori, cnum):
+    print("Running Ecdlabel")
     """
     @brief Binary encoding of multi-class label.
     @param yori: Labels to encode.
@@ -326,6 +334,7 @@ def Ecdlabel(yori, cnum):
 
 # Gini index for classification at a node
 def Cptginisplit(mds, X, y, T, clsnum):
+    print("Running Cptginisplit")
     """
     @brief Compute Gini index for classification at a node.
     @param mds: Model predictions.
@@ -350,6 +359,7 @@ def Cptginisplit(mds, X, y, T, clsnum):
 
 # Gini index computation for each classifier
 def Cpt_ginigroup(num1, y1, num0, y0, clsnum):
+    print("Running Cpt_ginigroup")
     """
     @brief Compute Gini index for each classifier group.
     @param num1: Number of samples in group 1.
@@ -378,6 +388,7 @@ def Cpt_ginigroup(num1, y1, num0, y0, clsnum):
 
 # Gini index for a node
 def Cptgininode(yori, clsn):
+    print("Running Cptgininode")
     """
     @brief Compute Gini index for a node.
     @param yori: Labels at node.
@@ -396,6 +407,7 @@ def Cptgininode(yori, clsn):
 
 # Accuracy for a node phase classifier
 def Cpt_Accuracy(mdl, X, y, T):
+    print("Running Cpt_Accuracy")
     """
     @brief Compute accuracy for a node phase classifier.
     @param mdl: Model.
@@ -416,6 +428,7 @@ def Cpt_Accuracy(mdl, X, y, T):
 
 # Count the number of data in each class
 def County(yori, clsnum):
+    print("Running County")
     """
     @brief Count the number of data in each class.
     @param yori: Labels.
@@ -430,6 +443,7 @@ def County(yori, clsnum):
 
 # Prune a tree using validation data
 def Prune_tree(Tree, Xval, yval):
+    print("Running Prune_tree")
     """
     @brief Prune a tree using validation data.
     @param Tree: Tree dictionary.
@@ -456,6 +470,7 @@ def Prune_tree(Tree, Xval, yval):
 
 # Postprune nodes of a tree classifier
 def Postprune(Nodes, Xtestori, ytestori):
+    print("Running Postprune")
     """
     @brief Postprune nodes of a tree classifier.
     @param Nodes: Tree dictionary.
@@ -518,6 +533,7 @@ def Postprune(Nodes, Xtestori, ytestori):
 
 # Evaluate model's performance using test data
 def Evaluate_model(Nodes, Xtestori, ytestori):
+    print("Running Evaluate_model")
     """
     @brief Evaluate model's performance using test data.
     @param Nodes: Tree dictionary.
