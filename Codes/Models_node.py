@@ -12,8 +12,6 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 import numpy as np
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
 # conjunction of different predicates
 class TL_NN1(nn.Module):
     """
@@ -328,8 +326,8 @@ class TL_NN5(nn.Module):
         self.r_asgm1_1 = torch.sigmoid(self.r_a1_1) # convert to 0-1 range
         self.A1_1sm =  F.softmax(self.A1_1, dim = 2)         
         self.weightbias1_1 = 1-self.beta1_1 + torch.sum(self.A1_1sm * (self.r_asgm1_1), 2)
-        self.activate1_1 = torch.max(torch.zeros(1).to(device), \
-                                      torch.min(torch.ones(1).to(device),self.weightbias1_1)).reshape([-1,self.T])         
+        self.activate1_1 = torch.max(torch.zeros(1).to(x1.device), \
+                                      torch.min(torch.ones(1).to(x1.device),self.weightbias1_1)).reshape([-1,self.T])         
         self.ra2_1 = self.activate1_1
         self.A2_1sm =  F.softmax(self.A2_1, dim = 1)        
         self.weightbias2_1 = self.beta1_2 - torch.sum(self.A2_1sm * (1-self.ra2_1), 1)
@@ -485,9 +483,12 @@ def Preprocess(x, T1, T2):
     @param T2 End column
     @return Sliced input
     """
-    xnew = torch.zeros([x.shape[0], T1, T2]).to(device)
+    # create new tensor on same device/dtype as x
+    xnew = x.new_zeros((x.size(0), T1, T2))
     for i in range(T1):
-        xnew[:,i,:] = torch.cat((x[:, i:], torch.zeros([x.shape[0],i]).to(device)),1)
+        pad = x.new_zeros((x.size(0), i))
+        # concat slice and padding along feature dimension
+        xnew[:, i, :] = torch.cat((x[:, i:], pad), dim=1)
     return xnew
 
 def clamp(x):

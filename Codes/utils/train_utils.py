@@ -9,11 +9,16 @@ Created on Tue Oct 11 10:30:37 2022
 
 import numpy as np
 import torch
-from torch.autograd import Variable
+# from torch.autograd import Variable
 from sklearn.metrics import accuracy_score
 from Models_node import *
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+if torch.cuda.is_available():
+    device = torch.device('cuda')
+elif torch.backends.mps.is_available():
+    device = torch.device('mps')
+else:
+    device = torch.device('cpu')
 
 class Node:
     """
@@ -150,12 +155,12 @@ def Trainnode(Nodes, pronum, Epoch, lrt, X, y, Mdlnum, mdlpath, clsnum, Xt, yt):
     yecds = Ecdlabel(yori, curclasses)
     yecdst = Ecdlabel(yorit, curclasses)
     yori = np.array(yori)
-    yori = torch.LongTensor(yori)
-    yorit = torch.LongTensor(yorit)
+    yori = torch.tensor(yori, dtype=torch.long, device=device)
+    yorit = torch.tensor(yorit, dtype=torch.long, device=device)
     N, T = len(yori), int(Xori.shape[1]/3)
     ginibest = 10
-    Xori = torch.Tensor(Xori)
-    Xorit = torch.Tensor(Xorit)
+    Xori = torch.tensor(Xori, dtype=torch.float32, device=device)
+    Xorit = torch.tensor(Xorit, dtype=torch.float32, device=device)
     batch_size = N // 20
     if batch_size <= 1:
         batch_size = N
@@ -166,7 +171,7 @@ def Trainnode(Nodes, pronum, Epoch, lrt, X, y, Mdlnum, mdlpath, clsnum, Xt, yt):
         X_rns = {}
         Losses = {}
         for i in curclasses:
-            tlnns[i] = eval('TL_NN' + str(mdlnum) + '(T)')
+            tlnns[i] = eval('TL_NN' + str(mdlnum) + '(T)').to(device)
             optimizers[i] = torch.optim.AdamW(tlnns[i].parameters(), lr = lrt)
         
         ginisall = []
@@ -178,9 +183,9 @@ def Trainnode(Nodes, pronum, Epoch, lrt, X, y, Mdlnum, mdlpath, clsnum, Xt, yt):
                     ytrain = np.array(yecds[Ci])
                     ytest = np.array(yecdst[Ci])
                     IR = sum(ytrain==1)/sum(ytrain==0) 
-                    ytrain = torch.LongTensor(ytrain)
-                    ytest = torch.LongTensor(ytest)
-                    X_batch = Variable(torch.Tensor(Xori[rand_idx,:]))
+                    ytrain = torch.tensor(ytrain, dtype=torch.long, device=device)
+                    ytest = torch.tensor(ytest, dtype=torch.long, device=device)
+                    X_batch = Xori[rand_idx,:]
                     y_batch = ytrain[rand_idx]
                     w_batch = IR * (1-y_batch) 
                     w_batch[w_batch==0] = 1
@@ -208,7 +213,7 @@ def Trainnode(Nodes, pronum, Epoch, lrt, X, y, Mdlnum, mdlpath, clsnum, Xt, yt):
                         Nodes[pronum].bstmdlclass = curclasses[ginisminnum]
                     
                     
-    Nodes[pronum].bestmodel = torch.load(mdlpath + 'bestmodel.pkl', , weights_only=False)
+    Nodes[pronum].bestmodel = torch.load(mdlpath + 'bestmodel.pkl',weights_only=False, map_location=device).to(device)
                  
     Xpred, accu, trueidx, falseidx = Cpt_Accuracy(Nodes[pronum].bestmodel,\
                                 Xori, yecds[Nodes[pronum].bstmdlclass], T)
@@ -405,6 +410,7 @@ def Cpt_Accuracy(mdl, X, y, T):
     @return Accuracy score.
     """
     Xpreds = mdl(X[:,:T], X[:,T:2*T], X[:,2*T:])
+    Xpreds = Xpreds.cpu()
     Xpredsnp = Xpreds.detach().numpy()
     Xpnprd = np.round(Xpredsnp)
     trueidx = np.where(Xpnprd == 1)[0]
@@ -463,7 +469,8 @@ def Postprune(Nodes, Xtestori, ytestori):
     @param ytestori: Test labels.
     @return Pruned tree.
     """
-    Xtestori = torch.Tensor(Xtestori)
+    Xtestori = torch.tensor(Xtestori, dtype=torch.float32, device=device)
+    clsnum = max(ytestori) + 1
     T = int(Xtestori.shape[1]/3)
     Nodes[0].Testidx = list(range(len(ytestori))) 
     Xpredclass = np.zeros(ytestori.shape)
@@ -525,7 +532,7 @@ def Evaluate_model(Nodes, Xtestori, ytestori):
     @param ytestori: Test labels.
     @return Accuracy score.
     """
-    Xtestori = torch.Tensor(Xtestori)
+    Xtestori = torch.tensor(Xtestori, dtype=torch.float32, device=device)
     clsnum = max(ytestori) + 1
     T = int(Xtestori.shape[1]/3)
     Nodes[0].Testidx = list(range(len(ytestori))) 
@@ -570,4 +577,3 @@ def Evaluate_model(Nodes, Xtestori, ytestori):
     tstaccu = accuracy_score(ytestori, Xpredupto)
     
     return tstaccu
-
