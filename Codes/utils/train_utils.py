@@ -166,6 +166,7 @@ def Trainnode(Nodes, pronum, Epoch, lrt, X, y, Mdlnum, mdlpath, clsnum, Xt, yt):
         batch_size = N
         
     for mdlnum in range(1, Mdlnum):
+        print(f"Model Number: {mdlnum}")
         tlnns = {}
         optimizers = {}
         X_rns = {}
@@ -175,7 +176,8 @@ def Trainnode(Nodes, pronum, Epoch, lrt, X, y, Mdlnum, mdlpath, clsnum, Xt, yt):
             optimizers[i] = torch.optim.AdamW(tlnns[i].parameters(), lr = lrt)
         
         ginisall = []
-        for epoch in range(Epoch):        
+        for epoch in range(Epoch):
+            print(f"Epoch: {epoch}")        
             for d_i in range(N//batch_size + 1):
                 rand_idx = np.array(range(d_i*batch_size, min((d_i+1)*batch_size,\
                                 N)))           
