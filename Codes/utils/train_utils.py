@@ -564,16 +564,16 @@ def Postprune(Nodes, Xtestori, ytestori):
 # Evaluate model's performance using test data
 def Evaluate_model(Nodes, Xtestori, ytestori):
     """Evaluate model's performance entirely on GPU without numpy conversions."""
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    # ensure tensors on device
-    if not torch.is_tensor(Xtestori):
-        Xtestori = torch.tensor(Xtestori, device=device)
-    else:
-        Xtestori = Xtestori.to(device)
-    if not torch.is_tensor(ytestori):
-        ytestori = torch.tensor(ytestori, device=device, dtype=torch.long)
-    else:
-        ytestori = ytestori.to(device)
+    # device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    # # ensure tensors on device
+    # if not torch.is_tensor(Xtestori):
+    #     Xtestori = torch.tensor(Xtestori, device=device)
+    # else:
+    #     Xtestori = Xtestori.to(device)
+    # if not torch.is_tensor(ytestori):
+    #     ytestori = torch.tensor(ytestori, device=device, dtype=torch.long)
+    # else:
+    #     ytestori = ytestori.to(device)
     clsnum = int(ytestori.max().item()) + 1
     T = Xtestori.shape[1] // 3
 
