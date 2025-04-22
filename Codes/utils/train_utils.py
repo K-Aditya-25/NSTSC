@@ -30,6 +30,7 @@ class Node:
 
 # Assign training data to a node
 def Givetraintonode(Nodes, pronodenum, datanums):
+    # print("Running Givetraintonode")
     """
     @brief Assigns training data indices to a node.
     @param Nodes Dictionary of nodes.
@@ -43,6 +44,7 @@ def Givetraintonode(Nodes, pronodenum, datanums):
 
 # Assign validation data to a node
 def Givevaltonode(Nodes, pronodenum, datanums):
+    # print("Running Givevaltonode")
     """
     @brief Assigns validation data indices to a node.
     @param Nodes Dictionary of nodes.
@@ -56,6 +58,7 @@ def Givevaltonode(Nodes, pronodenum, datanums):
 
 # Train a NSTSC model given training data
 def Train_model(Xtrain_raw, Xval_raw, ytrain_raw, yval_raw, epochs=100, normalize_timeseries=True, lr=0.1):
+    # print("Running Train_model")
     """
     @brief Train a NSTSC model given training and validation data.
     @param Xtrain_raw Training data features.
@@ -67,7 +70,9 @@ def Train_model(Xtrain_raw, Xval_raw, ytrain_raw, yval_raw, epochs=100, normaliz
     @param lr Learning rate.
     @return Trained tree model.
     """
-    classnum = int(np.max(ytrain_raw) + 1)
+    # classnum = int(np.max(ytrain_raw) + 1)
+    #Code for when ytrain_raw is on GPU
+    classnum = int(torch.max(ytrain_raw).item() + 1)
     Tree = Build_tree(Xtrain_raw, Xval_raw, ytrain_raw, yval_raw, epochs, classnum, learnrate=lr, savepath='./utils/')
     Tree = Prune_tree(Tree, Xval_raw, yval_raw)
     return Tree
@@ -75,6 +80,7 @@ def Train_model(Xtrain_raw, Xval_raw, ytrain_raw, yval_raw, epochs=100, normaliz
 
 # Construct a tree from node phase classifiers
 def Build_tree(Xtrain, Xval, ytrain_raw, yval_raw, Epoch, classnum, learnrate, savepath="./utils/"):
+    # print("Running Build_tree")
     """
     @brief Construct a tree from node phase classifiers.
     @param Xtrain: Training data features.
@@ -121,6 +127,7 @@ def Build_tree(Xtrain, Xval, ytrain_raw, yval_raw, Epoch, classnum, learnrate, s
 
 # Train a node phase classifier
 def Trainnode(Nodes, pronum, Epoch, lrt, X, y, Mdlnum, mdlpath, clsnum, Xt, yt):
+    # print("Running Trainnode")
     """
     @brief Train a node phase classifier.
     @param Nodes: Dictionary of nodes.
@@ -144,55 +151,63 @@ def Trainnode(Nodes, pronum, Epoch, lrt, X, y, Mdlnum, mdlpath, clsnum, Xt, yt):
     yorit = yt[testidx]
     yoricount = County(yori, clsnum)
     yoricountt = County(yorit, clsnum)
-    curclasses = np.where(yoricount!=0)[0]
+    # curclasses = np.where(yoricount!=0)[0]
+
+    #code for when yori is on GPU
+    curclasses = torch.where(yoricount!=0)[0]
     Nodes[pronum].ycount = yoricount
     Nodes[pronum].predcls = yoricountt.argmax()
     yecds = Ecdlabel(yori, curclasses)
     yecdst = Ecdlabel(yorit, curclasses)
-    yori = np.array(yori)
-    yori = torch.LongTensor(yori)
-    yorit = torch.LongTensor(yorit)
+    # yori = np.array(yori)
+    # yori = torch.LongTensor(yori).to(device) #move it to GPU
+    # yorit = torch.LongTensor(yorit).to(device) #move it to GPU
     N, T = len(yori), int(Xori.shape[1]/3)
     ginibest = 10
-    Xori = torch.Tensor(Xori)
-    Xorit = torch.Tensor(Xorit)
+    # Xori = torch.Tensor(Xori).to(device) #move it to GPU
+    # Xorit = torch.Tensor(Xorit).to(device) #move it to GPU
     batch_size = N // 20
     if batch_size <= 1:
         batch_size = N
         
     for mdlnum in range(1, Mdlnum):
+        # print(f"Model Number: {mdlnum}")
         tlnns = {}
         optimizers = {}
         X_rns = {}
         Losses = {}
         for i in curclasses:
-            tlnns[i] = eval('TL_NN' + str(mdlnum) + '(T)')
-            optimizers[i] = torch.optim.AdamW(tlnns[i].parameters(), lr = lrt)
+            i_int = int(i.item())  # Convert tensor to Python integer
+            # Move the model and input tensors to the GPU device
+            tlnns[i_int] = eval('TL_NN' + str(mdlnum) + '(T)').to(device)
+            optimizers[i_int] = torch.optim.AdamW(tlnns[i_int].parameters(), lr = lrt)
         
         ginisall = []
-        for epoch in range(Epoch):        
+        for epoch in range(Epoch):
+            # print(f"Epoch: {epoch}")        
             for d_i in range(N//batch_size + 1):
                 rand_idx = np.array(range(d_i*batch_size, min((d_i+1)*batch_size,\
                                 N)))           
                 for Ci in curclasses:
-                    ytrain = np.array(yecds[Ci])
-                    ytest = np.array(yecdst[Ci])
+                    Ci_int = int(Ci.item())  # Convert tensor to Python integer
+                    ytrain = yecds[Ci_int]
+                    ytest = yecdst[Ci_int]
                     IR = sum(ytrain==1)/sum(ytrain==0) 
-                    ytrain = torch.LongTensor(ytrain)
-                    ytest = torch.LongTensor(ytest)
-                    X_batch = Variable(torch.Tensor(Xori[rand_idx,:]))
+                    # ytrain = torch.LongTensor(ytrain).to(device) #move it to GPU
+                    # ytest = torch.LongTensor(ytest).to(device) #move it to GPU
+                    X_batch = torch.Tensor(Xori[rand_idx,:])
                     y_batch = ytrain[rand_idx]
                     w_batch = IR * (1-y_batch) 
                     w_batch[w_batch==0] = 1
-                    X_rns[Ci] = tlnns[Ci](X_batch[:,:T], X_batch[:,T:2*T],\
+                    X_rns[Ci_int] = tlnns[Ci_int](X_batch[:,:T], X_batch[:,T:2*T],\
                                           X_batch[:,2*T:])
-                    Losses[Ci] =  torch.sum(w_batch * (-y_batch * \
-                                  torch.log(X_rns[Ci] + 1e-9) - (1-y_batch) * \
-                                  torch.log(1-X_rns[Ci] + 1e-9)))
+                    Losses[Ci_int] =  torch.sum(w_batch * (-y_batch * \
+                                  torch.log(X_rns[Ci_int] + 1e-9) - (1-y_batch) * \
+                                  torch.log(1-X_rns[Ci_int] + 1e-9)))
                     
-                    optimizers[Ci].zero_grad()
-                    Losses[Ci].backward()
-                    optimizers[Ci].step()
+                    optimizers[Ci_int].zero_grad()
+                    Losses[Ci_int].backward()
+                    optimizers[Ci_int].step()
                 
                 if d_i % 10 == 0:
                     giniscores = torch.Tensor(Cptginisplit(tlnns, Xorit, yorit,\
@@ -201,14 +216,15 @@ def Trainnode(Nodes, pronum, Epoch, lrt, X, y, Mdlnum, mdlpath, clsnum, Xt, yt):
                     ginismin = giniscores.min()
                     ginisall.append(ginismin)
                     if ginismin < ginibest:
-                        torch.save(tlnns[curclasses[ginisminnum]], mdlpath + 'bestmodel.pkl')
+                        best_class = int(curclasses[ginisminnum].item())  # Convert to Python integer
+                        torch.save(tlnns[best_class], mdlpath + 'bestmodel.pkl')
                         # Nodes[pronum].predcls = ginisminnum
                         Nodes[pronum].ginis = ginismin
                         ginibest = ginismin
-                        Nodes[pronum].bstmdlclass = curclasses[ginisminnum]
+                        Nodes[pronum].bstmdlclass = best_class
                     
                     
-    Nodes[pronum].bestmodel = torch.load(mdlpath + 'bestmodel.pkl')
+    Nodes[pronum].bestmodel = torch.load(mdlpath + 'bestmodel.pkl', weights_only=False)
                  
     Xpred, accu, trueidx, falseidx = Cpt_Accuracy(Nodes[pronum].bestmodel,\
                                 Xori, yecds[Nodes[pronum].bstmdlclass], T)
@@ -225,6 +241,7 @@ def Trainnode(Nodes, pronum, Epoch, lrt, X, y, Mdlnum, mdlpath, clsnum, Xt, yt):
 
 # Expand left child node
 def Updateleftchd(Nodes, pronum, maxnum, Xori, yori, clsnum, Xorit, yorit):
+    # print("Running Updateleftchd")
     """
     @brief Expand left child node.
     @param Nodes: Dictionary of nodes.
@@ -268,6 +285,7 @@ def Updateleftchd(Nodes, pronum, maxnum, Xori, yori, clsnum, Xorit, yorit):
 
 # Expand right child node
 def Updaterigtchd(Nodes, pronum, maxnum, Xori, yori, clsnum, Xorit, yorit):
+    # print("Running Updaterigtchd")
     """
     @brief Expand right child node.
     @param Nodes: Dictionary of nodes.
@@ -310,22 +328,33 @@ def Updaterigtchd(Nodes, pronum, maxnum, Xori, yori, clsnum, Xorit, yorit):
 
 # Binary encoding of multi-class label
 def Ecdlabel(yori, cnum):
+    # print("Running Ecdlabel")
     """
     @brief Binary encoding of multi-class label.
     @param yori: Labels to encode.
     @param cnum: Classes present.
     @return Encoded labels.
     """
+    # ynew = {}
+    # for c in cnum:
+    #     yc = np.zeros(yori.shape)
+    #     yc[yori == c] = 1
+    #     ynew[c] = yc
+    # return ynew
+
+    #Code for when yori is on GPU
     ynew = {}
     for c in cnum:
-        yc = np.zeros(yori.shape)
-        yc[yori == c] = 1
-        ynew[c] = yc
+        c_int = int(c.item())  # Convert tensor to Python integer
+        yc = torch.zeros_like(yori, dtype=torch.long, device=yori.device)  # Create a tensor of zeros on the same device
+        yc[yori == c] = 1  # Use PyTorch-style boolean indexing
+        ynew[c_int] = yc
     return ynew
 
 
 # Gini index for classification at a node
 def Cptginisplit(mds, X, y, T, clsnum):
+    # print("Running Cptginisplit")
     """
     @brief Compute Gini index for classification at a node.
     @param mds: Model predictions.
@@ -350,6 +379,7 @@ def Cptginisplit(mds, X, y, T, clsnum):
 
 # Gini index computation for each classifier
 def Cpt_ginigroup(num1, y1, num0, y0, clsnum):
+    # print("Running Cpt_ginigroup")
     """
     @brief Compute Gini index for each classifier group.
     @param num1: Number of samples in group 1.
@@ -378,6 +408,7 @@ def Cpt_ginigroup(num1, y1, num0, y0, clsnum):
 
 # Gini index for a node
 def Cptgininode(yori, clsn):
+    # print("Running Cptgininode")
     """
     @brief Compute Gini index for a node.
     @param yori: Labels at node.
@@ -396,6 +427,7 @@ def Cptgininode(yori, clsn):
 
 # Accuracy for a node phase classifier
 def Cpt_Accuracy(mdl, X, y, T):
+    # print("Running Cpt_Accuracy")
     """
     @brief Compute accuracy for a node phase classifier.
     @param mdl: Model.
@@ -405,31 +437,40 @@ def Cpt_Accuracy(mdl, X, y, T):
     @return Accuracy score.
     """
     Xpreds = mdl(X[:,:T], X[:,T:2*T], X[:,2*T:])
-    Xpredsnp = Xpreds.detach().numpy()
+    Xpredsnp = Xpreds.detach().cpu().numpy() # Move predictions to CPU and convert to NumPy
     Xpnprd = np.round(Xpredsnp)
+    y_np = y.detach().cpu().numpy() # Move labels to CPU and convert to NumPy
     trueidx = np.where(Xpnprd == 1)[0]
     falseidx = np.where(Xpnprd == 0)[0]
-    accup = accuracy_score(y, Xpnprd)
+    accup = accuracy_score(y_np, Xpnprd) #sklearn accuracy_score function requires parameters to be numpy arrays and not tensors
     
     return Xpredsnp, accup, trueidx, falseidx
 
 
 # Count the number of data in each class
 def County(yori, clsnum):
+    # print("Running County")
     """
     @brief Count the number of data in each class.
     @param yori: Labels.
     @param clsnum: Number of classes.
     @return Array of counts per class.
     """
-    ycount = np.zeros((clsnum))
+    # ycount = np.zeros((clsnum))
+    # for i in range(clsnum):
+    #     ycount[i] = sum(yori == i)
+    # return ycount
+
+    #Writing code for when yori is on GPU
+    ycount = torch.zeros(clsnum, dtype=torch.long, device=yori.device)  # Create a tensor on the same device as yori
     for i in range(clsnum):
-        ycount[i] = sum(yori == i)
+        ycount[i] = torch.sum(yori == i)  # Use torch.sum for element-wise comparison
     return ycount
 
 
 # Prune a tree using validation data
 def Prune_tree(Tree, Xval, yval):
+    # print("Running Prune_tree")
     """
     @brief Prune a tree using validation data.
     @param Tree: Tree dictionary.
@@ -456,6 +497,7 @@ def Prune_tree(Tree, Xval, yval):
 
 # Postprune nodes of a tree classifier
 def Postprune(Nodes, Xtestori, ytestori):
+    # print("Running Postprune")
     """
     @brief Postprune nodes of a tree classifier.
     @param Nodes: Tree dictionary.
@@ -472,6 +514,10 @@ def Postprune(Nodes, Xtestori, ytestori):
     Xpreduptobst = Xpredupto
     accuuptobst = 0
     keep_list, prune_list = [], []
+
+    # Ensure ytestori is a NumPy array
+    ytestori_np = ytestori.cpu().numpy() if isinstance(ytestori, torch.Tensor) else ytestori
+
     while testnode < len(Nodes):
         if hasattr(Nodes[testnode], 'bestmodel'):
             testidx = Nodes[testnode].Testidx
@@ -488,7 +534,8 @@ def Postprune(Nodes, Xtestori, ytestori):
             Nodes[testnode].testfalseidx = falseidx
             Nodes[testnode].Xpreds = Xpredrd
             Xpredupto[Nodes[testnode].Testidx] = Xpredrd
-            accuupto = accuracy_score(ytestori, Xpredupto)
+            # accuupto = accuracy_score(ytestori, Xpredupto)
+            accuupto = accuracy_score(ytestori_np, Xpredupto)
             if accuupto > accuuptobst:
                 accuuptobst = accuupto - 0
                 keep_list.append(testnode)
@@ -507,9 +554,10 @@ def Postprune(Nodes, Xtestori, ytestori):
         else:
             if not hasattr(Nodes[testnode], 'leftchd') and not \
                 hasattr(Nodes[testnode], 'rightchd'):
-               Xpredclass[Nodes[testnode].Testidx] = Nodes[testnode].predcls
+               Xpredclass[Nodes[testnode].Testidx] = Nodes[testnode].predcls.cpu().item()
         testnode += 1
-    tstaccu = accuracy_score(ytestori, Xpredclass)
+    # tstaccu = accuracy_score(ytestori, Xpredclass)
+    tstaccu = accuracy_score(ytestori_np, Xpredclass)
     if tstaccu > accuuptobst:
         keep_list = list(Nodes.keys())
 
@@ -518,6 +566,7 @@ def Postprune(Nodes, Xtestori, ytestori):
 
 # Evaluate model's performance using test data
 def Evaluate_model(Nodes, Xtestori, ytestori):
+    # print("Running Evaluate_model")
     """
     @brief Evaluate model's performance using test data.
     @param Nodes: Tree dictionary.
@@ -525,8 +574,9 @@ def Evaluate_model(Nodes, Xtestori, ytestori):
     @param ytestori: Test labels.
     @return Accuracy score.
     """
-    Xtestori = torch.Tensor(Xtestori)
-    clsnum = max(ytestori) + 1
+    # Xtestori = torch.Tensor(Xtestori)
+    # clsnum = max(ytestori) + 1
+    clsnum = torch.max(ytestori).item() + 1
     T = int(Xtestori.shape[1]/3)
     Nodes[0].Testidx = list(range(len(ytestori))) 
     Xpredclass = np.zeros(ytestori.shape)
@@ -550,12 +600,19 @@ def Evaluate_model(Nodes, Xtestori, ytestori):
             Nodes[testnode].Xpreds = Xpredrd
             Xpredupto[np.array(Nodes[testnode].Testidx)[Nodes[testnode].testtrueidx]]\
                 = Nodes[testnode].bstmdlclass
-            ytfalse = ytestori[np.array(Nodes[testnode].Testidx)\
-                               [Nodes[testnode].testfalseidx]]
-            ytfalsecount = County(ytfalse.astype(int), int(clsnum))
+            ytfalse = ytestori[np.array(Nodes[testnode].Testidx)[\
+                Nodes[testnode].testfalseidx.cpu().numpy() if isinstance(Nodes[testnode].testfalseidx, torch.LongTensor)\
+                else Nodes[testnode].testfalseidx]]  # Ensure tensor is moved to CPU
+            
+            ytfalsecount = County(ytfalse.int(), int(clsnum))  # Convert tensor to integer type
+
             ytfalsemainclass = ytfalsecount.argmax()
-            Xpredupto[np.array(Nodes[testnode].Testidx)[Nodes[testnode].testfalseidx]]\
-                = ytfalsemainclass
+
+            print(type(Nodes[testnode].Testidx), '0')
+            print(Nodes[testnode].testfalseidx, '1')
+            print(type(Nodes[testnode].testfalseidx), '2')
+            
+            Xpredupto[np.array(Nodes[testnode].Testidx)[Nodes[testnode].testfalseidx.cpu().numpy() if isinstance(Nodes[testnode].testfalseidx, torch.Tensor) else Nodes[testnode].testfalseidx]] = ytfalsemainclass  # Ensure tensor is moved to CPU
             accuupto  = accuracy_score(ytestori, Xpredupto)
             Nodes[testnode].Xpredsupto = Xpredupto
             Nodes[testnode].testaccuupto = accuupto            
@@ -565,7 +622,7 @@ def Evaluate_model(Nodes, Xtestori, ytestori):
                      Testidx)[Nodes[testnode].testtrueidx]
             if hasattr(Nodes[testnode], 'rightchd'):
                 Nodes[Nodes[testnode].rightchd].Testidx = np.array(Nodes[testnode].\
-                     Testidx)[Nodes[testnode].testfalseidx]
+                     Testidx)[Nodes[testnode].testfalseidx.cpu().numpy()] #convert to numpy
         testnode_idx += 1
     tstaccu = accuracy_score(ytestori, Xpredupto)
     

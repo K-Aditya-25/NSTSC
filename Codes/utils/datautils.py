@@ -12,6 +12,7 @@ from sklearn.preprocessing import StandardScaler
 
 # Shuffle data
 def Shuffle(X, y):
+    # print("Running Shuffle")
     """
     @brief Shuffle the data and labels in unison.
     @param X: Input data array.
@@ -29,6 +30,7 @@ def Shuffle(X, y):
 
 # Load Dataset given a dataset's path
 def Readdataset(dataset_path_, Dataset_name, standalize=True, val=False):
+    # print("Running Readdataset")
     """
     @brief Load and preprocess dataset from the given path.
     @param dataset_path_: Path to the dataset directory.
@@ -39,10 +41,12 @@ def Readdataset(dataset_path_, Dataset_name, standalize=True, val=False):
     """
     
     Dataset_folder = dataset_path_ + Dataset_name + '/'
-    Xtrain = np.load(Dataset_folder + Dataset_name + '_Xtrain.npy')
-    Xtest = np.load(Dataset_folder + Dataset_name + '_Xtest.npy')
-    ytrain = np.load(Dataset_folder + Dataset_name + '_ytrain.npy')
-    ytest = np.load(Dataset_folder + Dataset_name + '_ytest.npy')
+    Xtrain = pd.read_csv(Dataset_folder + Dataset_name + '_TRAIN.tsv', header=None, sep='\t').values
+    Xtest = pd.read_csv(Dataset_folder + Dataset_name + '_TEST.tsv', header=None, sep='\t').values
+    ytrain = Xtrain[:,0]
+    ytest = Xtest[:,0]
+    Xtrain = Xtrain[:,1:]
+    Xtest = Xtest[:,1:]
     Xtrain, ytrain = Shuffle(Xtrain, ytrain)
     Xtest, ytest = Shuffle(Xtest, ytest)
     
@@ -82,6 +86,7 @@ def Readdataset(dataset_path_, Dataset_name, standalize=True, val=False):
 
 # Dimension of data
 def calculate_dataset_metrics(Xtrain):
+    # print("Running calculate_dataset_metrics")
     """
     @brief Calculate the number of samples and time steps in the training data.
     @param Xtrain: Training data array.
@@ -95,6 +100,7 @@ def calculate_dataset_metrics(Xtrain):
 
 # Compute interval length
 def Get_intinfo(T):
+    # print("Running Get_intinfo")
     """
     @brief Compute the interval length and number of intervals for a given time series length.
     @param T: Number of time steps.
@@ -113,6 +119,7 @@ def Get_intinfo(T):
 
 # Multi-view representation
 def Splitview(X, T):
+    # print("Running Splitview")
     """
     @brief Split the input data into original, FFT, and special feature views.
     @param X: Input data array.
@@ -133,6 +140,7 @@ def Extract_intfea(
     Xval_raw, Xval_fft, Xval_derv,
     Xtest_raw, Xtest_fft, Xtest_derv,
     nintv, intvlen):
+    # print("Running Extract_intfea")
     """
     @brief Extract interval features for all data splits and views.
     @param Xtrain_raw: Raw training data.
@@ -165,6 +173,7 @@ def Extract_intfea(
 
 # Add statistical features from interval data
 def Addstatfea(X, n, t):
+    # print("Running Addstatfea")
     """
     @brief Add statistical features (mean, std, min, max, median, IQR, slope) from interval data.
     @param X: Input data array.
@@ -184,6 +193,7 @@ def Addstatfea(X, n, t):
 
 # Mean feature
 def Addmean(X, n, t):
+    # print("Running Addmean")
     """
     @brief Add mean feature for each interval.
     @param X: Input data array.
@@ -204,6 +214,7 @@ def Addmean(X, n, t):
 
 # Std feature
 def Addstd(X, n, t):
+    # print("Running Addstd")
     """
     @brief Add standard deviation feature for each interval.
     @param X: Input data array.
@@ -224,6 +235,7 @@ def Addstd(X, n, t):
 
 # Min feature
 def Addmin(X, n, t):
+    # print("Running Addmin")
     """
     @brief Add minimum value feature for each interval.
     @param X: Input data array.
@@ -244,6 +256,7 @@ def Addmin(X, n, t):
 
 # Max feature
 def Addmax(X, n, t):
+    # print("Running Addmax")
     """
     @brief Add maximum value feature for each interval.
     @param X: Input data array.
@@ -264,6 +277,7 @@ def Addmax(X, n, t):
 
 # Median feature
 def Addmedian(X, n, t):
+    # print("Running Addmedian")
     """
     @brief Add median value feature for each interval.
     @param X: Input data array.
@@ -284,6 +298,7 @@ def Addmedian(X, n, t):
 
 # IQR feature
 def AddIQR(X, n, t):
+    # print("Running AddIQR")
     """
     @brief Add interquartile range (IQR) feature for each interval.
     @param X: Input data array.
@@ -306,6 +321,7 @@ def AddIQR(X, n, t):
 
 # Slope feature
 def Addslope(X, n, t):
+    # print("Running Addslope")
     """
     @brief Add slope (trend) feature for each interval.
     @param X: Input data array.
@@ -336,6 +352,7 @@ def Addslope(X, n, t):
 
 # Standardize data
 def Stand_data(Xtrain, Xval, Xtest, val=False):
+    # print("Running Stand_data")
     """
     @brief Standardize training, validation, and test datasets.
     @param Xtrain: Training data array.
@@ -368,6 +385,7 @@ def Stand_data(Xtrain, Xval, Xtest, val=False):
 
 # Extract features from multi views
 def Multi_view(Xtrain_raw, Xval_raw, Xtest_raw):
+    # print("Running Multi_view")
     """
     @brief Extract features from multiple views of the input data.
     @param Xtrain_raw: Raw training data.
