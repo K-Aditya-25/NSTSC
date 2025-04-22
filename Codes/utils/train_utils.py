@@ -607,9 +607,11 @@ def Evaluate_model(Nodes, Xtestori, ytestori):
             ytfalsecount = County(ytfalse.int(), int(clsnum))  # Convert tensor to integer type
 
             ytfalsemainclass = ytfalsecount.argmax()
+
             print(type(Nodes[testnode].Testidx), '0')
             print(Nodes[testnode].testfalseidx, '1')
             print(type(Nodes[testnode].testfalseidx), '2')
+            
             Xpredupto[np.array(Nodes[testnode].Testidx)[Nodes[testnode].testfalseidx.cpu().numpy() if isinstance(Nodes[testnode].testfalseidx, torch.Tensor) else Nodes[testnode].testfalseidx]] = ytfalsemainclass  # Ensure tensor is moved to CPU
             accuupto  = accuracy_score(ytestori, Xpredupto)
             Nodes[testnode].Xpredsupto = Xpredupto
