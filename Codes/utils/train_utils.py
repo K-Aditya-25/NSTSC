@@ -426,25 +426,22 @@ def Cptgininode(yori, clsn):
 
 
 # Accuracy for a node phase classifier
+@torch.no_grad() #For everything inside this function, don't track gradients
 def Cpt_Accuracy(mdl, X, y, T):
-    # print("Running Cpt_Accuracy")
     """
-    @brief Compute accuracy for a node phase classifier.
-    @param mdl: Model.
-    @param X: Data features.
-    @param y: Labels.
-    @param T: Number of time steps.
-    @return Accuracy score.
+    Compute binary accuracy entirely on device.
+    Returns:
+      preds: LongTensor of 0/1 (shape [N])
+      acc:   Python float accuracy
+      trueidx, falseidx: LongTensors of local indices
     """
-    Xpreds = mdl(X[:,:T], X[:,T:2*T], X[:,2*T:])
-    Xpredsnp = Xpreds.detach().cpu().numpy() # Move predictions to CPU and convert to NumPy
-    Xpnprd = np.round(Xpredsnp)
-    y_np = y.detach().cpu().numpy() # Move labels to CPU and convert to NumPy
-    trueidx = np.where(Xpnprd == 1)[0]
-    falseidx = np.where(Xpnprd == 0)[0]
-    accup = accuracy_score(y_np, Xpnprd) #sklearn accuracy_score function requires parameters to be numpy arrays and not tensors
-    
-    return Xpredsnp, accup, trueidx, falseidx
+    device = X.device
+    logits = mdl(X[:, :T], X[:, T:2*T], X[:, 2*T:])
+    preds = torch.round(logits).long().view(-1)
+    trueidx = torch.where(preds == 1)[0]
+    falseidx = torch.where(preds == 0)[0]
+    acc = (preds == y.to(device)).float().mean().item()
+    return preds, acc, trueidx, falseidx
 
 
 # Count the number of data in each class
@@ -566,65 +563,63 @@ def Postprune(Nodes, Xtestori, ytestori):
 
 # Evaluate model's performance using test data
 def Evaluate_model(Nodes, Xtestori, ytestori):
-    # print("Running Evaluate_model")
-    """
-    @brief Evaluate model's performance using test data.
-    @param Nodes: Tree dictionary.
-    @param Xtestori: Test features.
-    @param ytestori: Test labels.
-    @return Accuracy score.
-    """
-    # Xtestori = torch.Tensor(Xtestori)
-    # clsnum = max(ytestori) + 1
-    clsnum = torch.max(ytestori).item() + 1
-    T = int(Xtestori.shape[1]/3)
-    Nodes[0].Testidx = list(range(len(ytestori))) 
-    Xpredclass = np.zeros(ytestori.shape)
-    testnode = 0
-    Xpredupto = np.zeros(ytestori.shape)
-    Xpreduptobst = Xpredupto
-    accuuptobst = 0
-    Nodes_keys = list(Nodes.keys())
-    testnode_idx = 0
-    while testnode_idx < len(Nodes_keys):
-        testnode = Nodes_keys[testnode_idx]
-        if hasattr(Nodes[testnode], 'bestmodel'):
-            testidx = Nodes[testnode].Testidx
-            Xtest = Xtestori[testidx,:]
-            ytest = ytestori[testidx]
-            Xpred, accutest, trueidx, falseidx = Cpt_Accuracy(Nodes[testnode].bestmodel,\
-                            Xtest, ytest, T)
-            Xpredrd = np.round(Xpred)
-            Nodes[testnode].testtrueidx = trueidx
-            Nodes[testnode].testfalseidx = falseidx
-            Nodes[testnode].Xpreds = Xpredrd
-            Xpredupto[np.array(Nodes[testnode].Testidx)[Nodes[testnode].testtrueidx]]\
-                = Nodes[testnode].bstmdlclass
-            ytfalse = ytestori[np.array(Nodes[testnode].Testidx)[\
-                Nodes[testnode].testfalseidx.cpu().numpy() if isinstance(Nodes[testnode].testfalseidx, torch.LongTensor)\
-                else Nodes[testnode].testfalseidx]]  # Ensure tensor is moved to CPU
-            
-            ytfalsecount = County(ytfalse.int(), int(clsnum))  # Convert tensor to integer type
+    """Evaluate model's performance entirely on GPU without numpy conversions."""
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    # ensure tensors on device
+    if not torch.is_tensor(Xtestori):
+        Xtestori = torch.tensor(Xtestori, device=device)
+    else:
+        Xtestori = Xtestori.to(device)
+    if not torch.is_tensor(ytestori):
+        ytestori = torch.tensor(ytestori, device=device, dtype=torch.long)
+    else:
+        ytestori = ytestori.to(device)
+    clsnum = int(ytestori.max().item()) + 1
+    T = Xtestori.shape[1] // 3
 
-            ytfalsemainclass = ytfalsecount.argmax()
+    # initialize indices and prediction accumulator
+    Nodes[0].Testidx = torch.arange(len(ytestori), device=device, dtype=torch.long)
+    Xpredupto = torch.zeros_like(ytestori, device=device, dtype=torch.long)
 
-            print(type(Nodes[testnode].Testidx), '0')
-            print(Nodes[testnode].testfalseidx, '1')
-            print(type(Nodes[testnode].testfalseidx), '2')
-            
-            Xpredupto[np.array(Nodes[testnode].Testidx)[Nodes[testnode].testfalseidx.cpu().numpy() if isinstance(Nodes[testnode].testfalseidx, torch.Tensor) else Nodes[testnode].testfalseidx]] = ytfalsemainclass  # Ensure tensor is moved to CPU
-            accuupto  = accuracy_score(ytestori, Xpredupto)
-            Nodes[testnode].Xpredsupto = Xpredupto
-            Nodes[testnode].testaccuupto = accuupto            
-            
-            if hasattr(Nodes[testnode], 'leftchd'):
-                Nodes[Nodes[testnode].leftchd].Testidx = np.array(Nodes[testnode].\
-                     Testidx)[Nodes[testnode].testtrueidx]
-            if hasattr(Nodes[testnode], 'rightchd'):
-                Nodes[Nodes[testnode].rightchd].Testidx = np.array(Nodes[testnode].\
-                     Testidx)[Nodes[testnode].testfalseidx.cpu().numpy()] #convert to numpy
-        testnode_idx += 1
-    tstaccu = accuracy_score(ytestori, Xpredupto)
-    
+    # traverse nodes
+    for node_idx in list(Nodes.keys()):
+        node = Nodes[node_idx]
+        if hasattr(node, 'bestmodel'):
+            idxs = node.Testidx
+            # tensorify indices
+            if not torch.is_tensor(idxs):
+                idxs = torch.tensor(idxs, device=device, dtype=torch.long)
+            else:
+                idxs = idxs.to(device)
+            node.Testidx = idxs
+
+            # select test batch
+            Xtest = Xtestori[idxs]
+            ytest = ytestori[idxs]
+
+            # GPU-optimized prediction via Cpt_Accuracy
+            preds, _, true_local, false_local = Cpt_Accuracy(node.bestmodel, Xtest, ytest, T)
+            node.testtrueidx = idxs[true_local]
+            node.testfalseidx = idxs[false_local]
+            node.Xpreds = preds
+
+            # accumulate true-class predictions
+            Xpredupto[node.testtrueidx] = node.bstmdlclass
+            # compute majority class for false-case
+            counts = County(ytest, clsnum)
+            maincls = torch.argmax(counts).item()
+            Xpredupto[node.testfalseidx] = maincls
+
+            # record intermediate results
+            node.Xpredsupto = Xpredupto.clone()
+            node.testaccuupto = (Xpredupto == ytestori).sum().item() / len(ytestori)
+
+            # propagate indices to children
+            if hasattr(node, 'leftchd'):
+                Nodes[node.leftchd].Testidx = node.testtrueidx
+            if hasattr(node, 'rightchd'):
+                Nodes[node.rightchd].Testidx = node.testfalseidx
+
+    # final accuracy
+    tstaccu = (Xpredupto == ytestori).sum().item() / len(ytestori)
     return tstaccu
-
