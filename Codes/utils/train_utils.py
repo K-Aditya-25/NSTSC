@@ -232,10 +232,16 @@ def Trainnode(Nodes, pronum, Epoch, lrt, X, y, Mdlnum, mdlpath, clsnum, Xt, yt):
                                 Xorit, yecdst[Nodes[pronum].bstmdlclass], T)
         
     
-    Nodes[pronum].trueidx = np.array(Nodes[pronum].trainidx)[trueidx]
-    Nodes[pronum].falseidx = np.array(Nodes[pronum].trainidx)[falseidx]
-    Nodes[pronum].trueidxt = np.array(Nodes[pronum].testidx)[trueidxt]
-    Nodes[pronum].falseidxt = np.array(Nodes[pronum].testidx)[falseidxt]
+    # Nodes[pronum].trueidx = np.array(Nodes[pronum].trainidx)[trueidx]
+    # Nodes[pronum].falseidx = np.array(Nodes[pronum].trainidx)[falseidx]
+    # Nodes[pronum].trueidxt = np.array(Nodes[pronum].testidx)[trueidxt]
+    # Nodes[pronum].falseidxt = np.array(Nodes[pronum].testidx)[falseidxt]
+
+    # Convert trueidx and falseidx to a list of integers - numpy doesn't support tensor based indexing
+    Nodes[pronum].trueidx = [Nodes[pronum].trainidx[i.item()] for i in trueidx]
+    Nodes[pronum].falseidx = [Nodes[pronum].trainidx[i.item()] for i in falseidx]
+    Nodes[pronum].trueidxt = [Nodes[pronum].testidx[i.item()] for i in trueidxt]
+    Nodes[pronum].falseidxt = [Nodes[pronum].testidx[i.item()] for i in falseidxt]
     return Nodes, trueidx, falseidx, trueidxt, falseidxt    
 
 
@@ -494,71 +500,73 @@ def Prune_tree(Tree, Xval, yval):
 
 # Postprune nodes of a tree classifier
 def Postprune(Nodes, Xtestori, ytestori):
-    # print("Running Postprune")
     """
     @brief Postprune nodes of a tree classifier.
     @param Nodes: Tree dictionary.
-    @param Xtestori: Test features.
-    @param ytestori: Test labels.
+    @param Xtestori: Test features (PyTorch tensor).
+    @param ytestori: Test labels (PyTorch tensor).
     @return Pruned tree.
     """
-    Xtestori = torch.Tensor(Xtestori)
-    T = int(Xtestori.shape[1]/3)
-    Nodes[0].Testidx = list(range(len(ytestori))) 
-    Xpredclass = np.zeros(ytestori.shape)
-    testnode = 0
-    Xpredupto = np.zeros(ytestori.shape)
-    Xpreduptobst = Xpredupto
+    # Ensure Xtestori is a PyTorch tensor and move it to the correct device
+    Xtestori = Xtestori.to(device)
+    ytestori = ytestori.to(device)
+    T = Xtestori.shape[1] // 3
+
+    # Initialize variables
+    Nodes[0].Testidx = torch.arange(len(ytestori), device=device, dtype=torch.long)
+    Xpredclass = torch.zeros_like(ytestori, device=device)
+    Xpredupto = torch.zeros_like(ytestori, device=device, dtype=torch.long)
     accuuptobst = 0
     keep_list, prune_list = [], []
 
-    # Ensure ytestori is a NumPy array
-    ytestori_np = ytestori.cpu().numpy() if isinstance(ytestori, torch.Tensor) else ytestori
-
+    testnode = 0
     while testnode < len(Nodes):
         if hasattr(Nodes[testnode], 'bestmodel'):
             testidx = Nodes[testnode].Testidx
-            Xtest = Variable(Xtestori[testidx,:]).to(device)
-            ytest = Variable(torch.Tensor((ytestori[testidx]))).to(device)
-            
-            Preds_testnode = Nodes[testnode].bestmodel(Xtest[:,:T],\
-                            Xtest[:,T:2*T], Xtest[:, 2*T:]).cpu()
-            Predsnp = Preds_testnode.detach().numpy()
-            Xpred, accutest, trueidx, falseidx = Cpt_Accuracy(Nodes[testnode].bestmodel,\
-                            Xtest, ytest.cpu(), T)
-            Xpredrd = np.round(Xpred)
+            Xtest = Xtestori[testidx, :]
+            ytest = ytestori[testidx]
+
+            # Get predictions and accuracy
+            Xpred, accutest, trueidx, falseidx = Cpt_Accuracy(
+                Nodes[testnode].bestmodel, Xtest, ytest, T
+            )
+            Xpredrd = torch.round(Xpred)
+
+            # Update node attributes
             Nodes[testnode].testtrueidx = trueidx
             Nodes[testnode].testfalseidx = falseidx
             Nodes[testnode].Xpreds = Xpredrd
-            Xpredupto[Nodes[testnode].Testidx] = Xpredrd
-            # accuupto = accuracy_score(ytestori, Xpredupto)
-            accuupto = accuracy_score(ytestori_np, Xpredupto)
+            Xpredupto[testidx] = Xpredrd
+
+            # Calculate accuracy
+            accuupto = (Xpredupto == ytestori).float().mean().item()
             if accuupto > accuuptobst:
-                accuuptobst = accuupto - 0
+                accuuptobst = accuupto
                 keep_list.append(testnode)
             else:
                 prune_list.append(testnode)
-                
-            Nodes[testnode].Xpredsupto = Xpredupto
+
+            Nodes[testnode].Xpredsupto = Xpredupto.clone()
             Nodes[testnode].testaccuupto = accuupto
-            
+
+            # Propagate indices to child nodes
             if hasattr(Nodes[testnode], 'leftchd'):
-                Nodes[Nodes[testnode].leftchd].Testidx = np.array(Nodes[testnode].\
-                     Testidx)[Nodes[testnode].testtrueidx]
+                Nodes[Nodes[testnode].leftchd].Testidx = testidx[trueidx]
             if hasattr(Nodes[testnode], 'rightchd'):
-                Nodes[Nodes[testnode].rightchd].Testidx = np.array(Nodes[testnode].\
-                     Testidx)[Nodes[testnode].testfalseidx]
+                Nodes[Nodes[testnode].rightchd].Testidx = testidx[falseidx]
         else:
-            if not hasattr(Nodes[testnode], 'leftchd') and not \
-                hasattr(Nodes[testnode], 'rightchd'):
-               Xpredclass[Nodes[testnode].Testidx] = Nodes[testnode].predcls.cpu().item()
+            # Handle leaf nodes
+            if not hasattr(Nodes[testnode], 'leftchd') and not hasattr(Nodes[testnode], 'rightchd'):
+                Xpredclass[Nodes[testnode].Testidx] = Nodes[testnode].predcls.to(device)
+
         testnode += 1
-    # tstaccu = accuracy_score(ytestori, Xpredclass)
-    tstaccu = accuracy_score(ytestori_np, Xpredclass)
+
+    # Final accuracy check
+    tstaccu = (Xpredclass == ytestori).float().mean().item()
     if tstaccu > accuuptobst:
         keep_list = list(Nodes.keys())
 
-    return Xpredclass, tstaccu, accuuptobst, keep_list   
+    return Xpredclass, tstaccu, accuuptobst, keep_list
 
 
 # Evaluate model's performance using test data
