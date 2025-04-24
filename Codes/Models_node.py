@@ -484,7 +484,7 @@ class TL_NN6(nn.Module):
 
 
 def Preprocess(x, T1, T2):
-    print("Running Preprocess")
+    # print("Running Preprocess")
     """
     @brief Preprocess input by slicing columns from T1 to T2.
     @param x Input tensor/array
