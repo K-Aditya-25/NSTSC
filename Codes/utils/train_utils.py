@@ -13,8 +13,8 @@ from torch.autograd import Variable
 from sklearn.metrics import accuracy_score
 from Models_node import *
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
+# device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+device = 'cpu'
 class Node:
     """
     @class Node

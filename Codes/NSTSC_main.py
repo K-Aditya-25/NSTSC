@@ -17,7 +17,7 @@ def main():
     print('Start Training ---' + str(Dataset_name) + ' ---dataset\n')
     dataset_path_ = "../UCRArchive_2018/"
     normalize_dataset = True
-    Max_epoch = 2
+    Max_epoch = 50
     # model training
     Xtrain_raw, ytrain_raw, Xval_raw, yval_raw, Xtest_raw, ytest_raw = Readdataset(dataset_path_, Dataset_name)
     Xtrain, Xval, Xtest = Multi_view(Xtrain_raw, Xval_raw, Xtest_raw)
