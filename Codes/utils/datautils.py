@@ -49,7 +49,25 @@ def Readdataset(dataset_path_, Dataset_name, standalize=True, val=False):
     Xtest = Xtest[:,1:]
     Xtrain, ytrain = Shuffle(Xtrain, ytrain)
     Xtest, ytest = Shuffle(Xtest, ytest)
+
+    #fixing the data leakage issue, commented the earlier approach of standardizing data below
+    Xtrain_fft = np.fft.fft(Xtrain)
+    Xtrain_fft = np.abs(Xtrain_fft)
+    Xtrain_dif = Xtrain[:,1:] - Xtrain[:,:-1]
+    Xtrain_dif = np.concatenate((Xtrain_dif[:,0].reshape([-1,1]),Xtrain_dif),1)
+    Xtrain = np.concatenate((Xtrain, Xtrain_fft, Xtrain_dif),1)
+    Xtest_fft = np.fft.fft(Xtest)
+    Xtest_fft = np.abs(Xtest_fft)
+    Xtest_dif = Xtest[:,1:] - Xtest[:,:-1]
+    Xtest_dif = np.concatenate((Xtest_dif[:,0].reshape([-1,1]),Xtest_dif),1)
+    Xtest = np.concatenate((Xtest, Xtest_fft, Xtest_dif),1)
     
+    ss = StandardScaler()
+    if standalize:
+        Xtrain = ss.fit_transform(Xtrain)
+        Xtest = ss.transform(Xtest)
+
+
     Ntrain = Xtrain.shape[0]
     Xall, yall = np.concatenate((Xtrain, Xtest)), np.concatenate((ytrain, ytest))
         
@@ -58,17 +76,17 @@ def Readdataset(dataset_path_, Dataset_name, standalize=True, val=False):
     for ci in range(classnum):
         yall[yall == yset[ci]] = ci
     
-    ss = StandardScaler()
-    if standalize:
-        Xall = ss.fit_transform(Xall)
+    # ss = StandardScaler()
+    # if standalize:
+    #     Xall = ss.fit_transform(Xall)
         
-    Xall_fft = np.fft.fft(Xall)
-    Xall_fft = np.abs(Xall_fft)
-    Xall_dif = Xall[:,1:] - Xall[:,:-1]
-    Xall_dif = np.concatenate((Xall_dif[:,0].reshape([-1,1]),Xall_dif),1)
-    Xall = np.concatenate((Xall, Xall_fft, Xall_dif),1)
-    if standalize:
-        Xall = ss.fit_transform(Xall)
+    # Xall_fft = np.fft.fft(Xall)
+    # Xall_fft = np.abs(Xall_fft)
+    # Xall_dif = Xall[:,1:] - Xall[:,:-1]
+    # Xall_dif = np.concatenate((Xall_dif[:,0].reshape([-1,1]),Xall_dif),1)
+    # Xall = np.concatenate((Xall, Xall_fft, Xall_dif),1)
+    # if standalize:
+    #     Xall = ss.fit_transform(Xall)
     Xtrain, Xtest = Xall[:Ntrain,:], Xall[Ntrain:,:] 
     ytrain, ytest = yall[:Ntrain,], yall[Ntrain:,]
     
@@ -361,23 +379,15 @@ def Stand_data(Xtrain, Xval, Xtest, val=False):
     @param val: Whether to treat Xval as a separate validation set.
     @return Tuple of standardized (Xtrain, Xval, Xtest).
     """
+    #fixed data leakage issue
+    ss = StandardScaler()
+    Xtrain = ss.fit_transform(Xtrain)
+    
     if val:
-        Ntrain = Xtrain.shape[0]
-        Nval = Xval.shape[0]
-        Xall = np.concatenate((Xtrain, Xval, Xtest), 0)
-        ss = StandardScaler()
-        Xall = ss.fit_transform(Xall)
-        Xtrain = Xall[:Ntrain,:]
-        Xval = Xall[Ntrain:Ntrain+Nval, :]
-        Xtest = Xall[Ntrain+Nval:,:]
-        
+        Xval = ss.transform(Xval)
+        Xtest = ss.transform(Xtest)
     else:
-        Ntrain = Xtrain.shape[0]
-        Xall = np.concatenate((Xtrain, Xtest),0)
-        ss = StandardScaler()
-        Xall = ss.fit_transform(Xall)
-        Xtrain = Xall[:Ntrain,:]
-        Xtest = Xall[Ntrain:,:]
+        Xtest = ss.transform(Xtest)
         Xval = Xtest
 
     return Xtrain, Xval, Xtest

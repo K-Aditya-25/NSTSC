@@ -498,7 +498,7 @@ def Preprocess(x, T1, T2):
     return xnew
 
 def clamp(x):
-    print("Running clamp")
+    # print("Running clamp")
     """
     @brief Clamp tensor values to [0, 1].
     @param x Input tensor

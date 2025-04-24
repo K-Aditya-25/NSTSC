@@ -253,6 +253,7 @@ def Updateleftchd(Nodes, pronum, maxnum, Xori, yori, clsnum, Xorit, yorit):
     ylginit = Cptgininode(yleftt, clsnum)
     maxnum += 1
     Nodes[maxnum] = Node(maxnum)
+    print(f"Node {maxnum} created as left child of Node {pronum}")
     Nodes = Givetraintonode(Nodes, maxnum, Leftidx)
     Nodes = Givevaltonode(Nodes, maxnum, Leftidxt)
     ylcount = County(yleft, clsnum)
@@ -297,6 +298,7 @@ def Updaterigtchd(Nodes, pronum, maxnum, Xori, yori, clsnum, Xorit, yorit):
     yrginit = Cptgininode(yrightt, clsnum)
     maxnum += 1
     Nodes[maxnum] = Node(maxnum)
+    print(f"Node {maxnum} created as right child of Node {pronum}")
     Nodes = Givetraintonode(Nodes, maxnum, Rightidx)
     Nodes = Givevaltonode(Nodes, maxnum, Rightidxt)
     yrcount = County(yright, clsnum)
