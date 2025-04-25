@@ -12,8 +12,8 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 import numpy as np
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
+# device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+device = 'cpu'
 # conjunction of different predicates
 class TL_NN1(nn.Module):
     """
