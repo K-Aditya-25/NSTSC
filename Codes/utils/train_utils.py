@@ -13,8 +13,8 @@ from torch.autograd import Variable
 from sklearn.metrics import accuracy_score
 from Models_node import *
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
+# device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+device = 'cpu'
 class Node:
     """
     @class Node
@@ -30,7 +30,7 @@ class Node:
 
 # Assign training data to a node
 def Givetraintonode(Nodes, pronodenum, datanums):
-    print("Running Givetraintonode")
+    # print("Running Givetraintonode")
     """
     @brief Assigns training data indices to a node.
     @param Nodes Dictionary of nodes.
@@ -44,7 +44,7 @@ def Givetraintonode(Nodes, pronodenum, datanums):
 
 # Assign validation data to a node
 def Givevaltonode(Nodes, pronodenum, datanums):
-    print("Running Givevaltonode")
+    # print("Running Givevaltonode")
     """
     @brief Assigns validation data indices to a node.
     @param Nodes Dictionary of nodes.
@@ -58,7 +58,7 @@ def Givevaltonode(Nodes, pronodenum, datanums):
 
 # Train a NSTSC model given training data
 def Train_model(Xtrain_raw, Xval_raw, ytrain_raw, yval_raw, epochs=100, normalize_timeseries=True, lr=0.1):
-    print("Running Train_model")
+    # print("Running Train_model")
     """
     @brief Train a NSTSC model given training and validation data.
     @param Xtrain_raw Training data features.
@@ -78,7 +78,7 @@ def Train_model(Xtrain_raw, Xval_raw, ytrain_raw, yval_raw, epochs=100, normaliz
 
 # Construct a tree from node phase classifiers
 def Build_tree(Xtrain, Xval, ytrain_raw, yval_raw, Epoch, classnum, learnrate, savepath="./utils/"):
-    print("Running Build_tree")
+    # print("Running Build_tree")
     """
     @brief Construct a tree from node phase classifiers.
     @param Xtrain: Training data features.
@@ -125,7 +125,7 @@ def Build_tree(Xtrain, Xval, ytrain_raw, yval_raw, Epoch, classnum, learnrate, s
 
 # Train a node phase classifier
 def Trainnode(Nodes, pronum, Epoch, lrt, X, y, Mdlnum, mdlpath, clsnum, Xt, yt):
-    print("Running Trainnode")
+    # print("Running Trainnode")
     """
     @brief Train a node phase classifier.
     @param Nodes: Dictionary of nodes.
@@ -232,7 +232,7 @@ def Trainnode(Nodes, pronum, Epoch, lrt, X, y, Mdlnum, mdlpath, clsnum, Xt, yt):
 
 # Expand left child node
 def Updateleftchd(Nodes, pronum, maxnum, Xori, yori, clsnum, Xorit, yorit):
-    print("Running Updateleftchd")
+    # print("Running Updateleftchd")
     """
     @brief Expand left child node.
     @param Nodes: Dictionary of nodes.
@@ -253,6 +253,7 @@ def Updateleftchd(Nodes, pronum, maxnum, Xori, yori, clsnum, Xorit, yorit):
     ylginit = Cptgininode(yleftt, clsnum)
     maxnum += 1
     Nodes[maxnum] = Node(maxnum)
+    print(f"Node {maxnum} created as left child of Node {pronum}")
     Nodes = Givetraintonode(Nodes, maxnum, Leftidx)
     Nodes = Givevaltonode(Nodes, maxnum, Leftidxt)
     ylcount = County(yleft, clsnum)
@@ -276,7 +277,7 @@ def Updateleftchd(Nodes, pronum, maxnum, Xori, yori, clsnum, Xorit, yorit):
 
 # Expand right child node
 def Updaterigtchd(Nodes, pronum, maxnum, Xori, yori, clsnum, Xorit, yorit):
-    print("Running Updaterigtchd")
+    # print("Running Updaterigtchd")
     """
     @brief Expand right child node.
     @param Nodes: Dictionary of nodes.
@@ -297,6 +298,7 @@ def Updaterigtchd(Nodes, pronum, maxnum, Xori, yori, clsnum, Xorit, yorit):
     yrginit = Cptgininode(yrightt, clsnum)
     maxnum += 1
     Nodes[maxnum] = Node(maxnum)
+    print(f"Node {maxnum} created as right child of Node {pronum}")
     Nodes = Givetraintonode(Nodes, maxnum, Rightidx)
     Nodes = Givevaltonode(Nodes, maxnum, Rightidxt)
     yrcount = County(yright, clsnum)
@@ -319,7 +321,7 @@ def Updaterigtchd(Nodes, pronum, maxnum, Xori, yori, clsnum, Xorit, yorit):
 
 # Binary encoding of multi-class label
 def Ecdlabel(yori, cnum):
-    print("Running Ecdlabel")
+    # print("Running Ecdlabel")
     """
     @brief Binary encoding of multi-class label.
     @param yori: Labels to encode.
@@ -336,7 +338,7 @@ def Ecdlabel(yori, cnum):
 
 # Gini index for classification at a node
 def Cptginisplit(mds, X, y, T, clsnum):
-    print("Running Cptginisplit")
+    # print("Running Cptginisplit")
     """
     @brief Compute Gini index for classification at a node.
     @param mds: Model predictions.
@@ -361,7 +363,7 @@ def Cptginisplit(mds, X, y, T, clsnum):
 
 # Gini index computation for each classifier
 def Cpt_ginigroup(num1, y1, num0, y0, clsnum):
-    print("Running Cpt_ginigroup")
+    # print("Running Cpt_ginigroup")
     """
     @brief Compute Gini index for each classifier group.
     @param num1: Number of samples in group 1.
@@ -390,7 +392,7 @@ def Cpt_ginigroup(num1, y1, num0, y0, clsnum):
 
 # Gini index for a node
 def Cptgininode(yori, clsn):
-    print("Running Cptgininode")
+    # print("Running Cptgininode")
     """
     @brief Compute Gini index for a node.
     @param yori: Labels at node.
@@ -409,7 +411,7 @@ def Cptgininode(yori, clsn):
 
 # Accuracy for a node phase classifier
 def Cpt_Accuracy(mdl, X, y, T):
-    print("Running Cpt_Accuracy")
+    # print("Running Cpt_Accuracy")
     """
     @brief Compute accuracy for a node phase classifier.
     @param mdl: Model.
@@ -430,7 +432,7 @@ def Cpt_Accuracy(mdl, X, y, T):
 
 # Count the number of data in each class
 def County(yori, clsnum):
-    print("Running County")
+    # print("Running County")
     """
     @brief Count the number of data in each class.
     @param yori: Labels.

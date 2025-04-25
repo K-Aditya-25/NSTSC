@@ -12,8 +12,8 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 import numpy as np
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
+# device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+device = 'cpu'
 # conjunction of different predicates
 class TL_NN1(nn.Module):
     """
@@ -484,7 +484,7 @@ class TL_NN6(nn.Module):
 
 
 def Preprocess(x, T1, T2):
-    print("Running Preprocess")
+    # print("Running Preprocess")
     """
     @brief Preprocess input by slicing columns from T1 to T2.
     @param x Input tensor/array
@@ -498,7 +498,7 @@ def Preprocess(x, T1, T2):
     return xnew
 
 def clamp(x):
-    print("Running clamp")
+    # print("Running clamp")
     """
     @brief Clamp tensor values to [0, 1].
     @param x Input tensor
