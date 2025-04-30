@@ -13,11 +13,11 @@ def main():
     """
     @brief Main function to train and evaluate the NSTSC model.
     """
-    Dataset_name = "Coffee"
+    Dataset_name = sys.argv[1] if len(sys.argv) > 1 else "Coffee"
     print('Start Training ---' + str(Dataset_name) + ' ---dataset\n')
     dataset_path_ = "../UCRArchive_2018/"
     normalize_dataset = True
-    Max_epoch = 2
+    Max_epoch = int(sys.argv[2]) if len(sys.argv) > 2 else 5
     # model training
     Xtrain_raw, ytrain_raw, Xval_raw, yval_raw, Xtest_raw, ytest_raw = Readdataset(dataset_path_, Dataset_name)
     Xtrain, Xval, Xtest = Multi_view(Xtrain_raw, Xval_raw, Xtest_raw)
