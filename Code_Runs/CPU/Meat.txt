@@ -1,0 +1,7 @@
+Start Training ---Meat ---dataset
+
+Epochs = 10
+Time took for preprocessing data: 0.043975830078125s
+Time took for training model: 181.10072684288025s
+Test accuracy for dataset Meat is --- 1.0
+Time took for testing model: 0.002711057662963867s

@@ -1,5 +1,5 @@
 Start Training ---Coffee ---dataset
-
+(Manually Added)Epochs = 5
 Time took for preprocessing data: 0.02513909339904785s
 Time took for training model: 4.568071126937866s
 Test accuracy for dataset Coffee is --- 0.9285714285714286
