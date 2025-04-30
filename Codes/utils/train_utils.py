@@ -13,7 +13,7 @@ from torch.autograd import Variable
 from sklearn.metrics import accuracy_score
 from Models_node import *
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+device = torch.device('mps' if torch.backends.mps.is_available() else 'cpu')
 
 class Node:
     """
@@ -166,7 +166,7 @@ def Trainnode(Nodes, pronum, Epoch, lrt, X, y, Mdlnum, mdlpath, clsnum, Xt, yt):
         X_rns = {}
         Losses = {}
         for i in curclasses:
-            tlnns[i] = eval('TL_NN' + str(mdlnum) + '(T)')
+            tlnns[i] = eval('TL_NN' + str(mdlnum) + '(T)').to(device)
             optimizers[i] = torch.optim.AdamW(tlnns[i].parameters(), lr = lrt)
         
         ginisall = []
@@ -178,10 +178,10 @@ def Trainnode(Nodes, pronum, Epoch, lrt, X, y, Mdlnum, mdlpath, clsnum, Xt, yt):
                     ytrain = np.array(yecds[Ci])
                     ytest = np.array(yecdst[Ci])
                     IR = sum(ytrain==1)/sum(ytrain==0) 
-                    ytrain = torch.LongTensor(ytrain)
-                    ytest = torch.LongTensor(ytest)
-                    X_batch = Variable(torch.Tensor(Xori[rand_idx,:]))
-                    y_batch = ytrain[rand_idx]
+                    ytrain = torch.LongTensor(ytrain).to(device)
+                    ytest = torch.LongTensor(ytest).to(device)
+                    X_batch = torch.Tensor(Xori[rand_idx,:]).to(device)
+                    y_batch = ytrain[rand_idx].to(device)
                     w_batch = IR * (1-y_batch) 
                     w_batch[w_batch==0] = 1
                     X_rns[Ci] = tlnns[Ci](X_batch[:,:T], X_batch[:,T:2*T],\
@@ -335,6 +335,8 @@ def Cptginisplit(mds, X, y, T, clsnum):
     @param clsnum: Number of classes.
     @return Gini index and split indices.
     """
+    # Move all tensors to the device at the start of the function
+    y = y.to(device)
     ginis = []
     for md in mds.values():
         Xmd_preds = md(X[:,:T], X[:,T:2*T], X[:,2*T:])
@@ -405,7 +407,7 @@ def Cpt_Accuracy(mdl, X, y, T):
     @return Accuracy score.
     """
     Xpreds = mdl(X[:,:T], X[:,T:2*T], X[:,2*T:])
-    Xpredsnp = Xpreds.detach().numpy()
+    Xpredsnp = Xpreds.cpu().detach().numpy()
     Xpnprd = np.round(Xpredsnp)
     trueidx = np.where(Xpnprd == 1)[0]
     falseidx = np.where(Xpnprd == 0)[0]

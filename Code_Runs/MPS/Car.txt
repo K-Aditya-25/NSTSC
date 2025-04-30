@@ -1,0 +1,5 @@
+Using device: mps
+Start Training ---Car ---dataset
+
+Epochs = 10
+Time took for preprocessing data: 0.04715585708618164s

@@ -1,0 +1,8 @@
+Using device: mps
+Start Training ---Coffee ---dataset
+
+Epochs = 10
+Time took for preprocessing data: 0.02830982208251953s
+Time took for training model: 197.36695098876953s
+Test accuracy for dataset Coffee is --- 1.0
+Time took for testing model: 0.004305124282836914s

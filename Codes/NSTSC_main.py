@@ -11,6 +11,10 @@ import time
 import sys
 import os
 import pickle
+import torch
+
+device = torch.device('mps' if torch.backends.mps.is_available() else 'cpu')
+print(f"Using device: {device}")
 
 def main():
     """
@@ -22,11 +26,18 @@ def main():
     normalize_dataset = True
     Max_epoch = int(sys.argv[2]) if len(sys.argv) > 2 else 5
     print(f"Epochs = {Max_epoch}")
-    # Data Preprocessing and preparation
+    # Data Preprocessing and preparation on CPU
     preprocess_start = time.time() 
     Xtrain_raw, ytrain_raw, Xval_raw, yval_raw, Xtest_raw, ytest_raw = Readdataset(dataset_path_, Dataset_name)
     Xtrain, Xval, Xtest = Multi_view(Xtrain_raw, Xval_raw, Xtest_raw)
     N, T = calculate_dataset_metrics(Xtrain)
+    #Convert nd arrays to tensors and shift to MPS
+    # Xtrain = torch.tensor(Xtrain, device=device, dtype=torch.float16)
+    # Xval = torch.tensor(Xval, device=device, dtype=torch.float16)
+    # Xtest = torch.tensor(Xtest, device=device, dtype=torch.float16)
+    # ytrain_raw = torch.tensor(ytrain_raw, device=device, dtype=torch.int64)
+    # yval_raw = torch.tensor(yval_raw, device=device, dtype=torch.int64)
+    # ytest_raw = torch.tensor(ytest_raw, device=device, dtype=torch.int64)
     preprocess_end = time.time()
     print("Time took for preprocessing data: {}s".format(preprocess_end - preprocess_start))
     #Model Training
