@@ -208,7 +208,7 @@ def Trainnode(Nodes, pronum, Epoch, lrt, X, y, Mdlnum, mdlpath, clsnum, Xt, yt):
                         Nodes[pronum].bstmdlclass = curclasses[ginisminnum]
                     
                     
-    Nodes[pronum].bestmodel = torch.load(mdlpath + 'bestmodel.pkl', , weights_only=False)
+    Nodes[pronum].bestmodel = torch.load(mdlpath + 'bestmodel.pkl', weights_only=False)
                  
     Xpred, accu, trueidx, falseidx = Cpt_Accuracy(Nodes[pronum].bestmodel,\
                                 Xori, yecds[Nodes[pronum].bstmdlclass], T)

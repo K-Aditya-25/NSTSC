@@ -8,6 +8,9 @@ from Models_node import *
 from utils.datautils import *
 from utils.train_utils import *
 import time
+import sys
+import os
+import pickle
 
 def main():
     """
@@ -30,6 +33,10 @@ def main():
     Tree = Train_model(Xtrain, Xval, ytrain_raw, yval_raw, epochs=Max_epoch, normalize_timeseries=normalize_dataset)
     train_end = time.time()
     print("Time took for training model: {}s".format(train_end - train_start))
+    #Save the learned model weights as pkl file
+    os.makedirs("../Tree_Models", exist_ok=True)
+    with open(f"../Tree_Models/{Dataset_name}_tree.pkl", "wb") as f:
+        pickle.dump(Tree, f)
     # model testing/evaluation
     eval_start = time.time()
     testaccu = Evaluate_model(Tree, Xtest, ytest_raw)
