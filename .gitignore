@@ -1,0 +1,12 @@
+/UCRArchive_2018
+/Codes/.venv
+/Codes/main.py
+/Codes/.python-version
+/Codes/README.md
+/Codes/pyproject.toml
+/Codes/uv.lock
+/Codes/__pycache__
+/Codes/utils/__pycache__
+/Codes/utils/bestmodel.pkl
+/Codes/output.txt
+.DS_Store
