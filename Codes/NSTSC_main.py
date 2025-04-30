@@ -21,6 +21,7 @@ def main():
     dataset_path_ = "../UCRArchive_2018/"
     normalize_dataset = True
     Max_epoch = int(sys.argv[2]) if len(sys.argv) > 2 else 5
+    print(f"Epochs = {Max_epoch}")
     # Data Preprocessing and preparation
     preprocess_start = time.time() 
     Xtrain_raw, ytrain_raw, Xval_raw, yval_raw, Xtest_raw, ytest_raw = Readdataset(dataset_path_, Dataset_name)
