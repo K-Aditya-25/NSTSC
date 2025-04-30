@@ -48,8 +48,7 @@ def Readdataset(dataset_path_, Dataset_name, standalize=True, val=False):
     Xtrain, ytrain = Shuffle(Xtrain, ytrain)
     Xtest, ytest = Shuffle(Xtest, ytest)
     
-    Ntrain = Xtrain.shape[0]
-    Xall, yall = np.concatenate((Xtrain, Xtest)), np.concatenate((ytrain, ytest))
+    yall = np.concatenate((ytrain, ytest))
         
     yset = np.array(list(set(yall))).astype(int)
     classnum = len(yset)    
@@ -58,26 +57,30 @@ def Readdataset(dataset_path_, Dataset_name, standalize=True, val=False):
     
     ss = StandardScaler()
     if standalize:
-        Xall = ss.fit_transform(Xall)
+        Xtrain = ss.fit_transform(Xtrain)
+        Xtest = ss.transform(Xtest)
         
-    Xall_fft = np.fft.fft(Xall)
-    Xall_fft = np.abs(Xall_fft)
-    Xall_dif = Xall[:,1:] - Xall[:,:-1]
-    Xall_dif = np.concatenate((Xall_dif[:,0].reshape([-1,1]),Xall_dif),1)
-    Xall = np.concatenate((Xall, Xall_fft, Xall_dif),1)
+    Xtrain_fft = np.fft.fft(Xtrain)
+    Xtrain_fft = np.abs(Xtrain_fft)
+    Xtrain_dif = Xtrain[:,1:] - Xtrain[:,:-1]
+    Xtrain_dif = np.concatenate((Xtrain_dif[:,0].reshape([-1,1]),Xtrain_dif),1)
+    Xtrain = np.concatenate((Xtrain, Xtrain_fft, Xtrain_dif),1)
     if standalize:
-        Xall = ss.fit_transform(Xall)
-    Xtrain, Xtest = Xall[:Ntrain,:], Xall[Ntrain:,:] 
-    ytrain, ytest = yall[:Ntrain,], yall[Ntrain:,]
+        Xtrain = ss.fit_transform(Xtrain)
     
+    Xtest_fft = np.fft.fft(Xtest)
+    Xtest_fft = np.abs(Xtest_fft)
+    Xtest_dif = Xtest[:,1:] - Xtest[:,:-1]
+    Xtest_dif = np.concatenate((Xtest_dif[:,0].reshape([-1,1]),Xtest_dif),1)
+    Xtest = np.concatenate((Xtest, Xtest_fft, Xtest_dif),1)
+    if standalize:
+        Xtest = ss.transform(Xtest)
+    Xval, yval = Xtest, ytest
     if val:
-        Ntest = Xtest.shape[0]
+        Ntest = Xval.shape[0]
         Nval = int(Ntest * 0.5)
-        Xval, yval = Xtest[:Nval, :], ytest[:Nval,]
-        Xtest, ytest = Xtest[Nval:, :], ytest[Nval:,]
-    else:
-        Xval = Xtest - 0
-        yval = ytest - 0
+        Xval, yval = Xval[:Nval, :], yval[:Nval,]
+        Xtest, ytest = Xval[Nval:, :], yval[Nval:,]
     
     return Xtrain, ytrain, Xval, yval, Xtest, ytest
 
