@@ -90,7 +90,8 @@ def Build_tree(Xtrain, Xval, ytrain_raw, yval_raw, Epoch, classnum, learnrate, s
     Tree = {}
     pronodenum = 0
     maxnodenum = 0
-    Modelnum = 7
+    # Modelnum = 7 #Commenting this since model number = 5 after removing NN5 and NN6
+    Modelnum =  5
     bstaccu = 0
     Tree[maxnodenum] = Node(maxnodenum)
     Tree[pronodenum].stoptrain = False
