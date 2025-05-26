@@ -13,7 +13,11 @@ from torch.autograd import Variable
 from sklearn.metrics import accuracy_score
 from Models_node import *
 
-device = torch.device('mps' if torch.backends.mps.is_available() else 'cpu')
+
+if torch.backends.mps.is_available():
+    device = torch.device('mps')
+else:
+    device = torch.device('cpu')
 
 class Node:
     """
@@ -151,12 +155,12 @@ def Trainnode(Nodes, pronum, Epoch, lrt, X, y, Mdlnum, mdlpath, clsnum, Xt, yt):
     yecds = Ecdlabel(yori, curclasses)
     yecdst = Ecdlabel(yorit, curclasses)
     yori = np.array(yori)
-    yori = torch.LongTensor(yori)
-    yorit = torch.LongTensor(yorit)
+    yori = torch.LongTensor(yori).to(device)
+    yorit = torch.LongTensor(yorit).to(device)
     N, T = len(yori), int(Xori.shape[1]/3)
     ginibest = 10
-    Xori = torch.Tensor(Xori)
-    Xorit = torch.Tensor(Xorit)
+    Xori = torch.Tensor(Xori).to(device)
+    Xorit = torch.Tensor(Xorit).to(device)
     batch_size = N // 20
     if batch_size <= 1:
         batch_size = N
@@ -167,6 +171,7 @@ def Trainnode(Nodes, pronum, Epoch, lrt, X, y, Mdlnum, mdlpath, clsnum, Xt, yt):
         X_rns = {}
         Losses = {}
         for i in curclasses:
+            tlnns[i] = eval('TL_NN' + str(mdlnum) + '(T)').to(device)
             tlnns[i] = eval('TL_NN' + str(mdlnum) + '(T)').to(device)
             optimizers[i] = torch.optim.AdamW(tlnns[i].parameters(), lr = lrt)
         
@@ -179,12 +184,13 @@ def Trainnode(Nodes, pronum, Epoch, lrt, X, y, Mdlnum, mdlpath, clsnum, Xt, yt):
                     ytrain = np.array(yecds[Ci])
                     ytest = np.array(yecdst[Ci])
                     IR = sum(ytrain==1)/sum(ytrain==0) 
-                    ytrain = torch.LongTensor(ytrain).to(device)
-                    ytest = torch.LongTensor(ytest).to(device)
-                    X_batch = torch.Tensor(Xori[rand_idx,:]).to(device)
+                    ytrain = torch.LongTensor(ytrain).to(device).to(device)
+                    ytest = torch.LongTensor(ytest).to(device).to(device)
+                    X_batch = torch.Tensor(Xori[rand_idx,:]).to(device).to(device)
                     y_batch = ytrain[rand_idx].to(device)
                     w_batch = IR * (1-y_batch) 
                     w_batch[w_batch==0] = 1
+                    w_batch = w_batch.to(device)
                     X_rns[Ci] = tlnns[Ci](X_batch[:,:T], X_batch[:,T:2*T],\
                                           X_batch[:,2*T:])
                     Losses[Ci] =  torch.sum(w_batch * (-y_batch * \
@@ -197,8 +203,8 @@ def Trainnode(Nodes, pronum, Epoch, lrt, X, y, Mdlnum, mdlpath, clsnum, Xt, yt):
                 
                 if d_i % 10 == 0:
                     giniscores = torch.Tensor(Cptginisplit(tlnns, Xorit, yorit,\
-                                                           T, clsnum))
-                    ginisminnum = int(giniscores.argmin().numpy())
+                                                           T, clsnum)).to(device)
+                    ginisminnum = int(giniscores.argmin().cpu().numpy())
                     ginismin = giniscores.min()
                     ginisall.append(ginismin)
                     if ginismin < ginibest:
@@ -206,10 +212,10 @@ def Trainnode(Nodes, pronum, Epoch, lrt, X, y, Mdlnum, mdlpath, clsnum, Xt, yt):
                         # Nodes[pronum].predcls = ginisminnum
                         Nodes[pronum].ginis = ginismin
                         ginibest = ginismin
-                        Nodes[pronum].bstmdlclass = curclasses[ginisminnum]
-                    
+                        Nodes[pronum].bstmdlclass = curclasses[ginisminnum]                    
                     
     Nodes[pronum].bestmodel = torch.load(mdlpath + 'bestmodel.pkl', weights_only=False)
+    Nodes[pronum].bestmodel = Nodes[pronum].bestmodel.to(device)
                  
     Xpred, accu, trueidx, falseidx = Cpt_Accuracy(Nodes[pronum].bestmodel,\
                                 Xori, yecds[Nodes[pronum].bstmdlclass], T)
@@ -360,10 +366,9 @@ def Cpt_ginigroup(num1, y1, num0, y0, clsnum):
     @param num0: Number of samples in group 0.
     @param y0: Labels in group 0.
     @param clsnum: Number of classes.
-    @return Gini index.
-    """
-    y1prob = torch.zeros(clsnum)
-    y0prob = torch.zeros(clsnum)
+    @return Gini index.    """
+    y1prob = torch.zeros(clsnum).to(device)
+    y0prob = torch.zeros(clsnum).to(device)
     y1N = len(y1)
     y0N = len(y0)
     nums = num1 + num0
@@ -408,7 +413,7 @@ def Cpt_Accuracy(mdl, X, y, T):
     @return Accuracy score.
     """
     Xpreds = mdl(X[:,:T], X[:,T:2*T], X[:,2*T:])
-    Xpredsnp = Xpreds.cpu().detach().numpy()
+    Xpredsnp = Xpreds.detach().cpu().numpy()
     Xpnprd = np.round(Xpredsnp)
     trueidx = np.where(Xpnprd == 1)[0]
     falseidx = np.where(Xpnprd == 0)[0]
@@ -464,9 +469,8 @@ def Postprune(Nodes, Xtestori, ytestori):
     @param Nodes: Tree dictionary.
     @param Xtestori: Test features.
     @param ytestori: Test labels.
-    @return Pruned tree.
-    """
-    Xtestori = torch.Tensor(Xtestori)
+    @return Pruned tree.    """
+    Xtestori = torch.Tensor(Xtestori).to(device)
     T = int(Xtestori.shape[1]/3)
     Nodes[0].Testidx = list(range(len(ytestori))) 
     Xpredclass = np.zeros(ytestori.shape)
@@ -528,7 +532,7 @@ def Evaluate_model(Nodes, Xtestori, ytestori):
     @param ytestori: Test labels.
     @return Accuracy score.
     """
-    Xtestori = torch.Tensor(Xtestori)
+    Xtestori = torch.Tensor(Xtestori).to(device)
     clsnum = max(ytestori) + 1
     T = int(Xtestori.shape[1]/3)
     Nodes[0].Testidx = list(range(len(ytestori))) 

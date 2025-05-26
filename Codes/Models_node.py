@@ -12,7 +12,10 @@ import torch.nn.functional as F
 # from torch.autograd import Variable
 import numpy as np
 
-device = torch.device('mps' if torch.backends.mps.is_available() else 'cpu')
+if torch.backends.mps.is_available():
+    device = torch.device('mps')
+else:
+    device = torch.device('cpu')
 
 # conjunction of different predicates
 class TL_NN1(nn.Module):
@@ -541,4 +544,4 @@ def clamp(x):
     @param x Input tensor
     @return Clamped tensor
     """
-    return torch.max(torch.zeros_like(x), torch.min(torch.ones_like(x),x))
+    return torch.max(torch.zeros_like(x), torch.min(torch.ones_like(x), x))
